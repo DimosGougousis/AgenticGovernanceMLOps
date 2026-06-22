@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Research Team Handbook v2 — Agentic Architecture Templates</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; display: flex; min-height: 100vh; color: #111827; background: #f5f5f4; }
+
+    /* ---- sidebar ---- */
+    .sidebar { width: 300px; background: #0f172a; color: #e5e7eb; padding: 1.5rem 1.25rem; box-sizing: border-box; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+    .sidebar-logo { font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem; font-weight: 600; }
+    .sidebar h1 { font-size: 1rem; margin: 0 0 0.25rem; letter-spacing: 0.02em; color: #f1f5f9; font-weight: 600; }
+    .sidebar .version-badge { display: inline-block; font-size: 0.68rem; background: #1e3a5f; color: #93c5fd; padding: 0.1rem 0.45rem; border-radius: 3px; margin-bottom: 1.25rem; }
+    .sidebar nav a { display: block; color: #94a3b8; text-decoration: none; padding: 0.32rem 0.4rem; border-radius: 0.3rem; font-size: 0.84rem; transition: all 0.15s; }
+    .sidebar nav a:hover, .sidebar nav a.active { background: rgba(148,163,184,0.15); color: #e2e8f0; }
+    .sidebar .toc-section-title { margin-top: 1.25rem; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; font-weight: 700; padding: 0 0.4rem; }
+    .sidebar .toc-indent { padding-left: 1rem; }
+    .sidebar .toc-indent2 { padding-left: 1.75rem; }
+    .tool-pill-sidebar { display: inline-block; font-size: 0.6rem; padding: 0.05rem 0.3rem; border-radius: 3px; margin-left: 0.3rem; vertical-align: middle; }
+    .tp-aws { background: #7c2d12; color: #fed7aa; }
+    .tp-n8n { background: #14532d; color: #bbf7d0; }
+    .tp-lf { background: #1e3a5f; color: #bfdbfe; }
+    .tp-ls { background: #3b1f6a; color: #e9d5ff; }
+    .tp-lg { background: #1a2e1a; color: #86efac; }
+
+    /* ---- main ---- */
+    main { flex: 1; padding: 2rem 3rem 4rem; box-sizing: border-box; min-width: 0; }
+    .page-header { border-bottom: 2px solid #e5e7eb; padding-bottom: 1.5rem; margin-bottom: 0.5rem; }
+    .page-header h1 { font-size: 2rem; margin: 0 0 0.35rem; color: #0f172a; }
+    .page-header .subtitle { font-size: 1rem; color: #475569; margin: 0 0 1rem; max-width: 70ch; line-height: 1.55; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+    .pill { padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.76rem; border: 1px solid #e5e7eb; background: #f9fafb; color: #374151; }
+    .tool-stack-header { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .tool-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px; }
+    .tb-aws { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .tb-n8n { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .tb-lf  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .tb-ls  { background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; }
+    .tb-lg  { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+
+    main h2 { margin-top: 2.75rem; margin-bottom: 0.5rem; font-size: 1.5rem; color: #0f172a; padding-bottom: 0.4rem; border-bottom: 1.5px solid #e5e7eb; }
+    main h3 { margin-top: 1.75rem; margin-bottom: 0.4rem; font-size: 1.1rem; color: #111827; }
+    main h4 { margin-top: 1.25rem; margin-bottom: 0.3rem; font-size: 0.95rem; color: #374151; text-transform: uppercase; letter-spacing: 0.05em; }
+    p { line-height: 1.65; margin: 0.35rem 0 0.8rem; max-width: 74ch; }
+    ul, ol { margin: 0.2rem 0 0.9rem 1.4rem; padding: 0; }
+    li { margin: 0.3rem 0; line-height: 1.55; }
+
+    /* ---- code ---- */
+    code { background: #e5e7eb; padding: 0 0.28rem; border-radius: 0.2rem; font-size: 0.875em; font-family: "Fira Code", "Cascadia Code", monospace; }
+    pre { background: #020617; color: #e2e8f0; padding: 1rem 1.1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.82em; font-family: "Fira Code", "Cascadia Code", monospace; line-height: 1.55; margin: 0.75rem 0 1.25rem; }
+    pre .cm { color: #64748b; } /* comment */
+    pre .kw { color: #93c5fd; } /* keyword */
+    pre .st { color: #86efac; } /* string */
+    pre .fn { color: #fbbf24; } /* function */
+    pre .tp { color: #f9a8d4; } /* type */
+    pre .nm { color: #c4b5fd; } /* name/var */
+
+    /* ---- tables ---- */
+    table { border-collapse: collapse; margin: 0.75rem 0 1.5rem; width: 100%; font-size: 0.875rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.55rem 0.7rem; text-align: left; vertical-align: top; }
+    th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+    tbody tr:nth-child(even) td { background: #f9fafb; }
+
+    /* ---- callouts ---- */
+    .callout { border-radius: 0.4rem; padding: 0.8rem 1rem; border-left: 3px solid #0284c7; background: #ecfeff; margin: 0.85rem 0 1.1rem; font-size: 0.9rem; }
+    .callout-warn  { border-color: #d97706; background: #fffbeb; }
+    .callout-crit  { border-color: #7c3aed; background: #f5f3ff; }
+    .callout-green { border-color: #16a34a; background: #f0fdf4; }
+    .callout-dark  { border-color: #334155; background: #f8fafc; }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    /* ---- tool tabs ---- */
+    .tool-tabs { margin: 1rem 0 1.5rem; }
+    .tab-bar { display: flex; gap: 0; border-bottom: 2px solid #e5e7eb; overflow-x: auto; }
+    .tab-btn { flex: 0 0 auto; padding: 0.5rem 1rem; border: none; background: none; font-size: 0.82rem; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab-btn.active { color: #0f172a; border-bottom-color: #0f172a; }
+    .tab-btn:hover:not(.active) { color: #374151; background: #f9fafb; }
+    .tab-panel { display: none; padding: 1rem 0 0; }
+    .tab-panel.active { display: block; }
+
+    /* ---- agent role cards ---- */
+    .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0 1.5rem; }
+    .role-card { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; background: #fff; }
+    .role-card .role-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+    .role-card .role-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; color: #0f172a; }
+    .role-card .role-desc { font-size: 0.8rem; color: #6b7280; line-height: 1.5; }
+    .role-card .role-model { font-size: 0.72rem; font-family: monospace; margin-top: 0.5rem; color: #374151; background: #f3f4f6; padding: 0.2rem 0.4rem; border-radius: 3px; display: inline-block; }
+
+    /* ---- architecture diagram (text-based) ---- */
+    .arch-diagram { background: #020617; color: #e2e8f0; border-radius: 0.5rem; padding: 1.25rem 1.5rem; font-family: "Fira Code", "Cascadia Code", monospace; font-size: 0.8rem; line-height: 1.7; margin: 1rem 0 1.5rem; overflow-x: auto; }
+    .arch-diagram .node { color: #93c5fd; font-weight: bold; }
+    .arch-diagram .arrow { color: #64748b; }
+    .arch-diagram .label { color: #86efac; }
+    .arch-diagram .gate { color: #fbbf24; }
+    .arch-diagram .store { color: #f9a8d4; }
+
+    /* ---- checklist ---- */
+    .checklist { list-style: none; margin: 0.5rem 0 1.25rem; padding: 0; }
+    .checklist li { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.4rem 0.5rem; border-radius: 4px; font-size: 0.88rem; }
+    .checklist li:hover { background: #f9fafb; }
+    .checklist li::before { content: "☐"; flex: 0 0 auto; font-size: 1rem; color: #9ca3af; margin-top: 0.05rem; }
+    .checklist li.done::before { content: "✓"; color: #16a34a; }
+
+    /* ---- step sequence ---- */
+    .steps { counter-reset: step; list-style: none; padding: 0; margin: 0.75rem 0 1.25rem; }
+    .steps li { counter-increment: step; display: flex; gap: 1rem; align-items: flex-start; padding: 0.6rem 0; border-bottom: 1px solid #f3f4f6; font-size: 0.88rem; }
+    .steps li::before { content: counter(step); flex: 0 0 1.6rem; height: 1.6rem; background: #0f172a; color: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; margin-top: 0.05rem; }
+    .steps li:last-child { border-bottom: none; }
+
+    /* ---- anchor links ---- */
+    a.anchor { color: inherit; text-decoration: none; }
+    a.anchor::after { content: " #"; opacity: 0; font-size: 0.75em; color: #9ca3af; }
+    a.anchor:hover::after { opacity: 1; }
+
+    /* ---- section markers ---- */
+    .section-mark { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; margin-right: 0.5rem; }
+
+    @media (max-width: 960px) {
+      body { flex-direction: column; }
+      .sidebar { position: static; width: 100%; height: auto; }
+      main { padding: 1.25rem 1.2rem 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">AI Platform Engineering</div>
+  <h1>Research Team Handbook</h1>
+  <span class="version-badge">v2 · Architecture Templates</span>
+  <nav id="sidebar-nav">
+    <div class="toc-section-title">Architecture</div>
+    <a href="#ch1">1. Agentic Architecture Primer</a>
+    <a class="toc-indent" href="#ch1-anatomy">1.1 Anatomy of an Agent</a>
+    <a class="toc-indent" href="#ch1-monolith">1.2 Monolith vs. Specialist MAS</a>
+
+    <div class="toc-section-title">Core Templates</div>
+    <a href="#ch2">2. The 4-Agent Research Squad</a>
+    <a class="toc-indent" href="#planner">2.1 Planner</a>
+    <a class="toc-indent" href="#retriever">2.2 Retriever</a>
+    <a class="toc-indent" href="#critic">2.3 Critic</a>
+    <a class="toc-indent" href="#writer">2.4 Writer</a>
+    <a class="toc-indent" href="#ch2-state">2.5 Shared State Schema</a>
+
+    <div class="toc-section-title">Orchestration</div>
+    <a href="#ch3">3. Orchestration Pattern Templates</a>
+    <a class="toc-indent" href="#p-sequential">3.1 Sequential Pipeline</a>
+    <a class="toc-indent" href="#p-fanout">3.2 Concurrent Fan-Out</a>
+    <a class="toc-indent" href="#p-feedback">3.3 Feedback Loop</a>
+    <a class="toc-indent" href="#p-hierarchical">3.4 Hierarchical Tree</a>
+    <a class="toc-indent" href="#p-orchestrator">3.5 Orchestrator-Worker</a>
+    <a class="toc-indent" href="#p-blackboard">3.6 Blackboard / Mesh</a>
+
+    <div class="toc-section-title">Tool Implementation</div>
+    <a href="#ch4">4. Tool-by-Tool Templates</a>
+    <a class="toc-indent" href="#t-langgraph">4.1 LangGraph <span class="tool-pill-sidebar tp-lg">LG</span></a>
+    <a class="toc-indent" href="#t-langflow">4.2 Langflow <span class="tool-pill-sidebar tp-lf">LF</span></a>
+    <a class="toc-indent" href="#t-n8n">4.3 n8n <span class="tool-pill-sidebar tp-n8n">N8</span></a>
+    <a class="toc-indent" href="#t-langsmith">4.4 LangSmith <span class="tool-pill-sidebar tp-ls">LS</span></a>
+    <a class="toc-indent" href="#t-aws">4.5 AWS Stack <span class="tool-pill-sidebar tp-aws">AWS</span></a>
+
+    <div class="toc-section-title">Enterprise Rigor</div>
+    <a href="#ch5">5. Governance & Safety</a>
+    <a class="toc-indent" href="#ch5-hitl">5.1 HITL Gate Templates</a>
+    <a class="toc-indent" href="#ch5-obs">5.2 Observability Schema</a>
+    <a class="toc-indent" href="#ch5-checklist">5.3 Architecture Checklist</a>
+
+    <div class="toc-section-title">Reference</div>
+    <a href="#appendix-a">A. Pattern Decision Matrix</a>
+    <a href="#appendix-b">B. Model Selection Guide</a>
+    <a href="#appendix-c">C. Cost Control Patterns</a>
+  </nav>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <h1>AI Research Team Handbook</h1>
+    <p class="subtitle">Architecture templates, orchestration patterns, and tool-specific implementation guides for production-grade multi-agent research systems — using LangGraph, Langflow, n8n, LangSmith, and AWS.</p>
+    <div class="pill-row">
+      <span class="pill">Audience: AI/Automation Engineers</span>
+      <span class="pill">Scope: Research & Analysis Workflows</span>
+      <span class="pill">Version: 2026 · v2</span>
+    </div>
+    <div class="tool-stack-header">
+      <span class="tool-badge tb-aws">⬡ AWS Bedrock · Step Functions · Lambda</span>
+      <span class="tool-badge tb-n8n">● n8n</span>
+      <span class="tool-badge tb-lf">◈ Langflow</span>
+      <span class="tool-badge tb-ls">◉ LangSmith</span>
+      <span class="tool-badge tb-lg">◆ LangGraph</span>
+    </div>
+  </header>
+
+  <!-- ===== CHAPTER 1 ===== -->
+  <section id="ch1">
+    <h2><a class="anchor" href="#ch1">1. Agentic Architecture Primer</a></h2>
+    <p>An agentic system is a software system where a language model controls the flow of execution — choosing tools, invoking sub-agents, and updating shared state until a goal is satisfied or an escalation condition is met. The key architectural shift over "God Prompt" systems is that <strong>complexity moves from the prompt into the graph</strong>: explicit nodes, typed state, defined transitions, and deterministic control over irreversible actions.</p>
+
+    <h3 id="ch1-anatomy"><a class="anchor" href="#ch1-anatomy">1.1 Anatomy of an Agent</a></h3>
+    <p>Every agent in a production system has five components. Designing each explicitly prevents the most common failure modes.</p>
+
+    <table>
+      <thead><tr><th>Component</th><th>What it is</th><th>Production requirement</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>System prompt</strong></td>
+          <td>The agent's role, scope, output format, and constraints.</td>
+          <td>Version-controlled in Git; pinned at deployment; includes explicit <em>scope limits</em> (what the agent must NOT do).</td>
+        </tr>
+        <tr>
+          <td><strong>Tools</strong></td>
+          <td>Typed functions the agent can call: search, DB read/write, API call, code execution.</td>
+          <td>Least-privilege — read tools and write tools are separate objects. Each tool has a JSON schema the framework validates before execution.</td>
+        </tr>
+        <tr>
+          <td><strong>Memory</strong></td>
+          <td>In-context state, external vector/graph store, or episodic log.</td>
+          <td>Three layers: in-context (current task), semantic (vector DB for retrieval), episodic (structured log via <code>Zep</code> or <code>Mem0</code>).</td>
+        </tr>
+        <tr>
+          <td><strong>Control flow</strong></td>
+          <td>The logic that decides when the agent stops, loops, or hands off.</td>
+          <td>Explicit exit conditions; max-iteration guards; typed output schemas so downstream nodes parse reliably.</td>
+        </tr>
+        <tr>
+          <td><strong>Observability</strong></td>
+          <td>Traces, metrics, and logs emitted by the agent at runtime.</td>
+          <td>OpenTelemetry spans per tool call; cost and latency captured per node; trace IDs propagated across agent handoffs.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 id="ch1-monolith"><a class="anchor" href="#ch1-monolith">1.2 Monolith vs. Specialist Multi-Agent System</a></h3>
+    <div class="arch-diagram">
+<span class="cm">── Monolithic "God Prompt" ────────────────────────────────────────────────</span>
+
+  <span class="node">[ USER INPUT ]</span> ──▶ <span class="node">[ Single LLM  ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
+                      <span class="arrow">│  Role: Researcher + Critic + Writer</span>
+                      <span class="arrow">│  Context: Everything in one window</span>
+                      <span class="arrow">│  Failure: Lost-in-Middle, role bleed, no audit trail</span>
+
+<span class="cm">── Specialized Multi-Agent System (MAS) ──────────────────────────────────</span>
+
+  <span class="node">[ USER INPUT ]</span>
+       │
+       ▼
+  <span class="node">[ PLANNER  ]</span> ──▶ emits DAG with task IDs + HITL checkpoints
+       │
+       ├──▶ <span class="node">[ RETRIEVER ×N ]</span> ──▶ <span class="label">evidence snippets + citations</span>
+       │         │
+       │         ▼
+       │    <span class="store">[ SHARED STATE ]</span> ◀──── <span class="node">[ CRITIC ]</span> ──▶ GAPS_FOUND / NO_GAPS
+       │         │                              │
+       │         │◀─── feedback loop (max 3) ───┘
+       │         ▼
+       └──▶ <span class="node">[ WRITER  ]</span> ──▶ <span class="gate">[ HITL GATE ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
+    </div>
+
+    <table>
+      <thead><tr><th>Dimension</th><th>God Prompt</th><th>Specialist MAS</th></tr></thead>
+      <tbody>
+        <tr><td>Context management</td><td>Single window, key evidence buried in middle</td><td>Each agent gets only state relevant to its role; docs chunked via RAG</td></tr>
+        <tr><td>Reasoning quality</td><td>Researcher/Critic/Writer roles bleed together</td><td>Adversarial Critic catches errors before Writer sees evidence</td></tr>
+        <tr><td>Scalability</td><td>Linear bottleneck; one prompt edit breaks everything</td><td>DAG enables parallel retrieval; agents swap without rewiring</td></tr>
+        <tr><td>Observability</td><td>Raw chat transcript — no attribution</td><td>Node-level traces, tool calls, cost/latency per agent (LangSmith, Datadog)</td></tr>
+        <tr><td>Governance</td><td>Safety buried in one mega-prompt</td><td>HITL gates at explicit nodes; immutable audit trail per run</td></tr>
+        <tr><td>Cost control</td><td>Frontier model for every token</td><td>Haiku/mini for extraction; frontier only at planning and writing steps</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===== CHAPTER 2 ===== -->
+  <section id="ch2">
+    <h2><a class="anchor" href="#ch2">2. The 4-Agent Research Squad — Templates</a></h2>
+    <p>A production research desk decomposes into four cooperating agents. Each has a single responsibility, typed inputs/outputs, and tool access scoped to its mission.</p>
+
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-icon">🧠</div>
+        <div class="role-name">Planner</div>
+        <div class="role-desc">Converts ambiguous user requests into a structured DAG of tasks with explicit dependencies, success criteria, and HITL gates.</div>
+        <span class="role-model">Claude Opus 4 / GPT-4o</span>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">🔍</div>
+        <div class="role-name">Retriever</div>
+        <div class="role-desc">Pulls ranked evidence from vector stores, graph DBs, SQL, and APIs. Returns citations in a canonical structured format.</div>
+        <span class="role-model">Claude Haiku / GPT-4o-mini</span>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">⚔️</div>
+        <div class="role-name">Critic</div>
+        <div class="role-desc">Adversarial reviewer — checks evidence and drafts for gaps, contradictions, missing citations, and policy violations.</div>
+        <span class="role-model">Claude Sonnet / GPT-4o</span>
+      </div>
+      <div class="role-card">
+        <div class="role-icon">✍️</div>
+        <div class="role-name">Writer</div>
+        <div class="role-desc">Evidence-bound synthesizer. Forbidden from free-form research — receives only critic-approved artifacts and writes structured output.</div>
+        <span class="role-model">Claude Sonnet / GPT-4o</span>
+      </div>
+    </div>
+
+    <!-- PLANNER -->
+    <h3 id="planner"><a class="anchor" href="#planner">2.1 Planner — Template</a></h3>
+    <p>The Planner is the only agent with full access to the user query. It emits a machine-readable plan — not prose — so all downstream agents parse it deterministically.</p>
+
+    <h4>System Prompt Template</h4>
+    <pre><span class="cm"># PLANNER SYSTEM PROMPT</span>
+<span class="kw">You are</span> a research planning agent. Your <span class="kw">only</span> job is to decompose
+the user request into a JSON task DAG. Do NOT perform research.
+
+<span class="tp">Output schema (TypeScript):</span>
+<span class="nm">interface</span> <span class="tp">Plan</span> {
+  goal: <span class="st">"string"</span>;                  <span class="cm">// restated goal, one sentence</span>
+  tasks: <span class="tp">Task</span>[];
+  hitl_checkpoints: <span class="st">"task_id"</span>[]; <span class="cm">// tasks requiring human approval</span>
+  success_criteria: <span class="st">"string"</span>[];   <span class="cm">// measurable exit conditions</span>
+  abort_conditions: <span class="st">"string"</span>[];   <span class="cm">// conditions triggering stop</span>
+}
+
+<span class="nm">interface</span> <span class="tp">Task</span> {
+  id: <span class="st">"string"</span>;         <span class="cm">// e.g. "T1", "T2"</span>
+  role: <span class="st">"retriever" | "critic" | "writer" | "human"</span>;
+  description: <span class="st">"string"</span>;
+  depends_on: <span class="st">"task_id"</span>[];
+  parallel: <span class="kw">boolean</span>;   <span class="cm">// can run alongside sibling tasks?</span>
+  tools: <span class="st">"string"</span>[];    <span class="cm">// from approved tool registry</span>
+  max_retries: <span class="kw">number</span>;  <span class="cm">// loop guard</span>
+}
+
+<span class="tp">Rules:</span>
+- Favor small tasks with a single clear output.
+- Mark parallel: true only when tasks have no data dependency.
+- Never assign tools outside the approved registry below.
+- Insert hitl_checkpoints before any external publish or write action.
+
+<span class="tp">Approved tool registry:</span> web_search, kb_lookup, sql_read, graph_query,
+code_run_sandbox, draft_email (read-only tools only at Retriever stage).</pre>
+
+    <h4>Output Example — Plan DAG</h4>
+    <pre>{
+  <span class="st">"goal"</span>: <span class="st">"Produce a competitive analysis of EU AI Act compliance tools"</span>,
+  <span class="st">"tasks"</span>: [
+    { <span class="st">"id"</span>:<span class="st">"T1"</span>, <span class="st">"role"</span>:<span class="st">"retriever"</span>, <span class="st">"description"</span>:<span class="st">"Search for top 5 vendors"</span>,
+      <span class="st">"depends_on"</span>:[], <span class="st">"parallel"</span>:<span class="kw">true</span>,
+      <span class="st">"tools"</span>:[<span class="st">"web_search"</span>,<span class="st">"kb_lookup"</span>], <span class="st">"max_retries"</span>:2 },
+    { <span class="st">"id"</span>:<span class="st">"T2"</span>, <span class="st">"role"</span>:<span class="st">"retriever"</span>, <span class="st">"description"</span>:<span class="st">"Pull EU AI Act Articles 10,13"</span>,
+      <span class="st">"depends_on"</span>:[], <span class="st">"parallel"</span>:<span class="kw">true</span>,
+      <span class="st">"tools"</span>:[<span class="st">"kb_lookup"</span>], <span class="st">"max_retries"</span>:1 },
+    { <span class="st">"id"</span>:<span class="st">"T3"</span>, <span class="st">"role"</span>:<span class="st">"critic"</span>, <span class="st">"description"</span>:<span class="st">"Validate evidence gaps"</span>,
+      <span class="st">"depends_on"</span>:[<span class="st">"T1"</span>,<span class="st">"T2"</span>], <span class="st">"parallel"</span>:<span class="kw">false</span>,
+      <span class="st">"tools"</span>:[], <span class="st">"max_retries"</span>:3 },
+    { <span class="st">"id"</span>:<span class="st">"T4"</span>, <span class="st">"role"</span>:<span class="st">"writer"</span>, <span class="st">"description"</span>:<span class="st">"Draft comparison table + exec summary"</span>,
+      <span class="st">"depends_on"</span>:[<span class="st">"T3"</span>], <span class="st">"parallel"</span>:<span class="kw">false</span>,
+      <span class="st">"tools"</span>:[], <span class="st">"max_retries"</span>:1 }
+  ],
+  <span class="st">"hitl_checkpoints"</span>: [<span class="st">"T4"</span>],
+  <span class="st">"success_criteria"</span>: [<span class="st">"≥4 vendors with pricing data"</span>, <span class="st">"all claims cited"</span>],
+  <span class="st">"abort_conditions"</span>: [<span class="st">"retrieval recall &lt; 60%"</span>, <span class="st">"critic loops &gt; 3"</span>]
+}</pre>
+
+    <!-- RETRIEVER -->
+    <h3 id="retriever"><a class="anchor" href="#retriever">2.2 Retriever — Template</a></h3>
+    <p>The Retriever's output quality is the single biggest lever on the final answer. Measuring retrieval separately from generation — recall and faithfulness as distinct metrics — is the non-negotiable first step.</p>
+
+    <h4>System Prompt Template</h4>
+    <pre><span class="cm"># RETRIEVER SYSTEM PROMPT</span>
+<span class="kw">You are</span> a retrieval specialist. Execute exactly the task assigned by
+the Planner. Return evidence in the canonical citation format below.
+Do NOT synthesize, interpret, or write conclusions.
+
+<span class="tp">Citation format (required for every snippet):</span>
+[SOURCE_ID · source_name · section/lines · retrieved_at · confidence:0-1]
+
+<span class="tp">Output schema:</span>
+<span class="nm">interface</span> <span class="tp">RetrievalResult</span> {
+  task_id:    <span class="st">"string"</span>;
+  snippets:   <span class="tp">Snippet</span>[];
+  coverage:   <span class="st">"complete" | "partial" | "insufficient"</span>;
+  gaps:       <span class="st">"string"</span>[];  <span class="cm">// topics with no evidence found</span>
+  corpus_ver: <span class="st">"string"</span>;   <span class="cm">// version tag for reproducibility</span>
+}
+
+<span class="nm">interface</span> <span class="tp">Snippet</span> {
+  text:       <span class="st">"string"</span>;
+  citation:   <span class="st">"string"</span>;  <span class="cm">// canonical format above</span>
+  confidence: <span class="kw">number</span>;    <span class="cm">// 0–1 retrieval score</span>
+  freshness:  <span class="st">"string"</span>;  <span class="cm">// ISO date of document</span>
+}
+
+<span class="tp">Rules:</span>
+- If coverage is "insufficient", surface gaps immediately — do not invent.
+- Tag documents older than 90 days as STALE in the citation.
+- Use graph traversal (not similarity search) for named entities.</pre>
+
+    <h4>Tool Wiring — Retriever Tool Set</h4>
+    <table>
+      <thead><tr><th>Tool</th><th>Purpose</th><th>AWS Implementation</th><th>n8n / Langflow Node</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>kb_lookup</code></td>
+          <td>Semantic search over internal docs</td>
+          <td>AWS Bedrock Knowledge Bases (OpenSearch Serverless backend)</td>
+          <td>n8n: Vector Store Tool node · Langflow: AmazonBedrockComponent</td>
+        </tr>
+        <tr>
+          <td><code>web_search</code></td>
+          <td>Live web retrieval</td>
+          <td>AWS Lambda → Tavily API / Brave Search API</td>
+          <td>n8n: HTTP Request node (Tavily) · Langflow: TavilySearch Tool</td>
+        </tr>
+        <tr>
+          <td><code>sql_read</code></td>
+          <td>Structured data from internal DB</td>
+          <td>AWS Lambda → RDS Proxy (read replica, IAM auth)</td>
+          <td>n8n: Postgres node (read-only) · Langflow: SQLDatabase Tool</td>
+        </tr>
+        <tr>
+          <td><code>graph_query</code></td>
+          <td>Entity-relationship traversal</td>
+          <td>AWS Neptune → Gremlin queries via Lambda</td>
+          <td>n8n: HTTP Request → Neo4j API · Langflow: Neo4jGraph Tool</td>
+        </tr>
+        <tr>
+          <td><code>doc_extract</code></td>
+          <td>Extract text from PDFs / Office files</td>
+          <td>AWS Textract → S3 → Lambda parser</td>
+          <td>n8n: Read/Write Files → text splitter · Langflow: PyPDFLoader</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- CRITIC -->
+    <h3 id="critic"><a class="anchor" href="#critic">2.3 Critic — Template</a></h3>
+    <p>The Critic is optimized for error detection, not fluency. It outputs a machine-parseable diagnostic that drives the orchestrator's feedback loop.</p>
+
+    <h4>System Prompt Template</h4>
+    <pre><span class="cm"># CRITIC SYSTEM PROMPT</span>
+<span class="kw">You are</span> an adversarial reviewer. Examine the evidence artifacts below
+and return a structured diagnostic. Do NOT rewrite or improve — only detect.
+
+<span class="tp">Output schema:</span>
+<span class="nm">interface</span> <span class="tp">CriticReport</span> {
+  status:   <span class="st">"NO_GAPS" | "GAPS_FOUND" | "ABORT"</span>;
+  issues:   <span class="tp">Issue</span>[];
+  confidence_floor: <span class="kw">number</span>; <span class="cm">// lowest confidence score across snippets</span>
+  retry_tasks: <span class="st">"task_id"</span>[]; <span class="cm">// tasks the Retriever must redo</span>
+  abort_reason?: <span class="st">"string"</span>;   <span class="cm">// required if status === "ABORT"</span>
+}
+
+<span class="nm">interface</span> <span class="tp">Issue</span> {
+  type:        <span class="st">"missing_citation" | "contradiction" | "stale_source" |
+               "policy_violation" | "coverage_gap" | "low_confidence"</span>;
+  description: <span class="st">"string"</span>;
+  severity:    <span class="st">"low" | "medium" | "high" | "critical"</span>;
+  location:    <span class="st">"string"</span>; <span class="cm">// snippet ID or task reference</span>
+}
+
+<span class="tp">Rules:</span>
+- Set status ABORT if any issue is "critical" or confidence_floor &lt; 0.4.
+- Set status GAPS_FOUND if retry_tasks is non-empty.
+- Set status NO_GAPS only when zero issues are detected.
+- Maximum 3 GAPS_FOUND cycles before escalating to human review.</pre>
+
+    <!-- WRITER -->
+    <h3 id="writer"><a class="anchor" href="#writer">2.4 Writer — Template</a></h3>
+    <p>The Writer receives only critic-approved evidence. Tool access is disabled — it cannot perform additional research. Unsupported claims are a schema validation error.</p>
+
+    <h4>System Prompt Template</h4>
+    <pre><span class="cm"># WRITER SYSTEM PROMPT</span>
+<span class="kw">You are</span> an evidence-bound technical writer. You will receive a validated
+evidence package and a target format. Write ONLY from the evidence provided.
+
+<span class="tp">Hard constraints:</span>
+- Every factual claim MUST reference a snippet citation by ID.
+- If evidence is insufficient for a section, write: [INSUFFICIENT EVIDENCE — flag for human review]
+- Do NOT use training knowledge. Evidence package is the only source.
+- Tool access: NONE.
+
+<span class="tp">Output schema (varies by format — example: report):</span>
+<span class="nm">interface</span> <span class="tp">Report</span> {
+  title:            <span class="st">"string"</span>;
+  executive_summary: <span class="st">"string"</span>;  <span class="cm">// ≤150 words</span>
+  sections:          <span class="tp">Section</span>[];
+  citations:         <span class="tp">Citation</span>[];  <span class="cm">// full citation list</span>
+  confidence_score:  <span class="kw">number</span>;       <span class="cm">// avg of all snippet confidences used</span>
+  review_flags:      <span class="st">"string"</span>[];  <span class="cm">// list of sections needing human review</span>
+}</pre>
+
+    <!-- SHARED STATE -->
+    <h3 id="ch2-state"><a class="anchor" href="#ch2-state">2.5 Shared State Schema</a></h3>
+    <p>All agents read from and write to a single typed state object managed by the orchestrator. This prevents implicit coupling and makes every transition auditable.</p>
+    <pre><span class="cm"># Shared State — TypeScript interface (maps to LangGraph StateGraph annotations)</span>
+<span class="nm">interface</span> <span class="tp">ResearchState</span> {
+  <span class="cm">// Core identifiers</span>
+  run_id:         <span class="st">"string"</span>;          <span class="cm">// UUID; propagated as OTel trace ID</span>
+  user_query:     <span class="st">"string"</span>;
+  plan:           <span class="tp">Plan | null</span>;
+
+  <span class="cm">// Retrieval</span>
+  evidence:       <span class="tp">RetrievalResult[]</span>;
+  retrieval_iter: <span class="kw">number</span>;           <span class="cm">// incremented each Retriever call</span>
+
+  <span class="cm">// Critique</span>
+  critic_report:  <span class="tp">CriticReport | null</span>;
+  critic_loops:   <span class="kw">number</span>;           <span class="cm">// guard against infinite loops</span>
+
+  <span class="cm">// Output</span>
+  draft:          <span class="tp">Report | null</span>;
+  final_output:   <span class="tp">Report | null</span>;
+
+  <span class="cm">// Control</span>
+  hitl_pending:   <span class="kw">boolean</span>;
+  hitl_decision:  <span class="st">"approved" | "rejected" | null</span>;
+  status:         <span class="st">"planning" | "retrieving" | "critiquing" | "writing" |
+                  "hitl_wait" | "complete" | "aborted"</span>;
+  error:          <span class="st">"string | null"</span>;
+}</pre>
+  </section>
+
+  <!-- ===== CHAPTER 3 ===== -->
+  <section id="ch3">
+    <h2><a class="anchor" href="#ch3">3. Orchestration Pattern Templates</a></h2>
+    <p>The same four agents produce entirely different systems depending on how they are wired together. Each pattern below is a self-contained design: it includes the flow diagram (showing all paths — happy, error, and guard), three concrete business use cases, and implementation snippets across LangGraph, n8n, Langflow, and AWS.</p>
+
+    <div class="callout callout-dark">
+      <strong>Pattern selection rule.</strong> Choose the <em>simplest</em> pattern whose diagram matches your failure modes — not the most sophisticated one. Complexity compounds: a Hierarchical Tree with feedback loops inside each branch is hard to debug at 2 AM. Add one layer of complexity at a time, validate with eval, then add the next.
+    </div>
+
+    <table>
+      <thead><tr><th>Pattern</th><th>Core motion</th><th>Latency profile</th><th>Best section</th></tr></thead>
+      <tbody>
+        <tr><td>3.1 Sequential Pipeline</td><td>A → B → C → D, no branches</td><td>Slowest (sum of all steps)</td><td>Compliance, audit, SOP</td></tr>
+        <tr><td>3.2 Concurrent Fan-Out</td><td>One → many → aggregate → continue</td><td>Fastest (parallel wall-clock)</td><td>Multi-source research, batch enrichment</td></tr>
+        <tr><td>3.3 Feedback Loop</td><td>A → B ← C (until quality passes)</td><td>Variable (loops add cycles)</td><td>High-stakes accuracy, self-correcting QA</td></tr>
+        <tr><td>3.4 Hierarchical Tree</td><td>Supervisor → squads → synthesizer</td><td>Moderate (squads parallel)</td><td>Enterprise multi-domain reports</td></tr>
+        <tr><td>3.5 Orchestrator-Worker</td><td>Central planner dispatches dynamic tasks</td><td>Moderate</td><td>Support triage, task routing, ops automation</td></tr>
+        <tr><td>3.6 Blackboard / Mesh</td><td>Agents read/write shared event store freely</td><td>Unpredictable</td><td>Exploratory research, emergent coordination</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.1 SEQUENTIAL -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-sequential"><a class="anchor" href="#p-sequential">3.1 Sequential Pipeline</a></h3>
+    <p>The linear chain is the simplest and most auditable pattern. Every node has exactly one predecessor and one successor. The audit trail is a straight line: trivially reconstructable, trivially testable.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="cm">INPUT ─────────────────────────────────────────────────────────────── OUTPUT</span>
+
+<span class="node">[ USER QUERY ]</span>
+      │
+      ▼
+<span class="node">[ PLANNER ]</span> ──── emits: Plan JSON (task list, success criteria, abort conditions)
+      │
+      │  on schema validation error ──▶ <span class="node">[ ERROR NODE ]</span> ──▶ return 400
+      ▼
+<span class="node">[ RETRIEVER ]</span> ── fetches evidence from KB / web / SQL
+      │
+      │  on tool failure ──▶ retry ×2 ──▶ <span class="node">[ ERROR NODE ]</span> ──▶ surface gap
+      ▼
+<span class="node">[ CRITIC ]</span> ────── validates evidence; outputs CriticReport
+      │
+      │  ⚠ In pure sequential mode, Critic does NOT loop back.
+      │    It annotates gaps into the report and passes forward.
+      ▼
+<span class="gate">[ HITL GATE ]</span> ── human reviews CriticReport + evidence summary
+      │                                               │
+   approved ──────────────────────────────────────── rejected ──▶ <span class="node">[ ESCALATE ]</span>
+      │
+      ▼
+<span class="node">[ WRITER ]</span> ───── synthesises evidence-bound output
+      │
+      ▼
+<span class="node">[ OUTPUT ]</span> ───── delivered + logged to audit store
+
+<span class="label">Key invariant: every node emits exactly one typed output.
+                 No implicit side effects. No shared mutable state.</span>
+<span class="cm">Audit: one DynamoDB / CloudWatch log entry per node transition. Replay = re-run from checkpoint.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why sequential fits</th><th>HITL gate position</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Weekly regulatory compliance briefing</strong> — pulls new EU AI Act / GDPR guidance, summarises changes for legal team</td>
+          <td>Fixed schedule, fixed sources, fixed output template. Compliance team needs immutable audit trail. No dynamic branching required.</td>
+          <td>Before distribution — legal counsel approves before email sent to board</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Employee onboarding knowledge pack</strong> — generates role-specific handbook from HR policy KB + org chart + team wiki</td>
+          <td>Input (new employee role) deterministically maps to a fixed set of sources. Output always same format. One-shot, no iteration needed.</td>
+          <td>HR manager reviews generated pack before it's sent to new hire</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Customer contract summariser</strong> — ingests uploaded PDF, extracts key clauses, flags anomalies against standard template</td>
+          <td>Textract extraction → structured critique → summary is purely sequential. Contract doesn't change mid-process. Audit trail critical for legal defensibility.</td>
+          <td>Paralegal reviews flagged anomalies before summary delivered to account manager</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Sequential Template</h4>
+    <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+<span class="kw">from</span> langgraph.checkpoint.postgres <span class="kw">import</span> PostgresSaver
+
+graph = StateGraph(<span class="tp">ResearchState</span>)
+
+<span class="cm"># Happy-path nodes</span>
+graph.<span class="fn">add_node</span>(<span class="st">"planner"</span>,   planner_node)
+graph.<span class="fn">add_node</span>(<span class="st">"retriever"</span>, retriever_node)
+graph.<span class="fn">add_node</span>(<span class="st">"critic"</span>,    critic_node)
+graph.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,      hitl_interrupt_node)
+graph.<span class="fn">add_node</span>(<span class="st">"writer"</span>,    writer_node)
+
+<span class="cm"># Error / escalation nodes</span>
+graph.<span class="fn">add_node</span>(<span class="st">"error"</span>,    error_node)
+graph.<span class="fn">add_node</span>(<span class="st">"escalate"</span>, escalation_node)
+
+graph.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+
+<span class="cm"># Linear chain — each step writes to state, next step reads it</span>
+graph.<span class="fn">add_edge</span>(<span class="st">"planner"</span>,   <span class="st">"retriever"</span>)
+graph.<span class="fn">add_edge</span>(<span class="st">"retriever"</span>, <span class="st">"critic"</span>)
+graph.<span class="fn">add_edge</span>(<span class="st">"critic"</span>,    <span class="st">"hitl"</span>)
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_hitl,
+    {<span class="st">"approved"</span>: <span class="st">"writer"</span>, <span class="st">"rejected"</span>: <span class="st">"escalate"</span>})
+graph.<span class="fn">add_edge</span>(<span class="st">"writer"</span>,    END)
+graph.<span class="fn">add_edge</span>(<span class="st">"escalate"</span>,  END)
+graph.<span class="fn">add_edge</span>(<span class="st">"error"</span>,     END)
+
+app = graph.<span class="fn">compile</span>(
+    checkpointer=<span class="fn">PostgresSaver</span>.from_conn_string(POSTGRES_URL),
+    interrupt_before=[<span class="st">"hitl"</span>]  <span class="cm"># hard pause; resumes on .update()</span>
+)</pre>
+
+    <h4>n8n — Sequential Workflow Config</h4>
+    <pre><span class="cm">// n8n: each node passes output as $json to next. No looping nodes.</span>
+{
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Planner"</span>,  <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-opus-4"</span>, <span class="st">"systemMessage"</span>: <span class="st">"{{planner_prompt}}"</span>,
+                        <span class="st">"outputParser"</span>: <span class="st">"json"</span> } },
+    { <span class="st">"name"</span>: <span class="st">"Retriever"</span>, <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-haiku-4"</span>,
+                        <span class="st">"tools"</span>: [<span class="st">"tavily"</span>, <span class="st">"vectorStore"</span>] } },
+    { <span class="st">"name"</span>: <span class="st">"Critic"</span>,    <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-sonnet-4-6"</span>, <span class="st">"outputParser"</span>: <span class="st">"json"</span> } },
+    { <span class="st">"name"</span>: <span class="st">"HITL Gate"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.wait"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"resume"</span>: <span class="st">"webhook"</span> } },
+    { <span class="st">"name"</span>: <span class="st">"Writer"</span>,    <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-sonnet-4-6"</span>, <span class="st">"tools"</span>: [] } },
+    { <span class="st">"name"</span>: <span class="st">"Send Output"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.emailSend"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"to"</span>: <span class="st">"{{$json.recipient}}"</span>, <span class="st">"text"</span>: <span class="st">"{{$json.final_output}}"</span> } }
+  ],
+  <span class="st">"connections"</span>: {
+    <span class="st">"Planner"</span>:   { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Retriever"</span> }]] },
+    <span class="st">"Retriever"</span>: { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Critic"</span> }]] },
+    <span class="st">"Critic"</span>:    { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"HITL Gate"</span> }]] },
+    <span class="st">"HITL Gate"</span>: { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Writer"</span> }]] },
+    <span class="st">"Writer"</span>:    { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Send Output"</span> }]] }
+  }
+}</pre>
+
+    <div class="callout">
+      <strong>AWS implementation.</strong> Sequential pipeline = Step Functions Standard Workflow (not Express — Standard persists execution history per state). Each state is a Lambda. Use <code>ResultPath: "$.node_output"</code> to accumulate outputs without overwriting the input. Total execution time limit: 1 year (vs. 5 minutes for Express).
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.2 CONCURRENT FAN-OUT -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-fanout"><a class="anchor" href="#p-fanout">3.2 Concurrent Fan-Out</a></h3>
+    <p>Fan-out dispatches independent sub-tasks to parallel workers, then merges results before proceeding. Wall-clock latency equals the <em>slowest</em> worker, not the sum of all. The Aggregator node is the critical piece: it must deduplicate, rerank, and normalise citations across heterogeneous sources.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ PLANNER ]</span> ── emits parallel task list (T1, T2, T3 all parallel:true)
+      │
+      │  route_to_retrievers() dispatches Send() per task
+      │
+      ├──────────────────────────────────────────────────────────┐
+      │                           │                              │
+      ▼                           ▼                              ▼
+<span class="node">[ RETRIEVER: web  ]</span>    <span class="node">[ RETRIEVER: KB   ]</span>         <span class="node">[ RETRIEVER: SQL  ]</span>
+  Tavily search          Bedrock KB / pgvector         RDS read replica
+  → 5 snippets           → 8 snippets                  → 3 rows → snippets
+      │                           │                              │
+      └──────────────────────────▶│◀─────────────────────────────┘
+                                  ▼
+                         <span class="node">[ AGGREGATOR ]</span>
+                          1. Merge snippet lists
+                          2. Deduplicate by source_id
+                          3. Rerank by cross-encoder score
+                          4. Keep top-K (default: 12)
+                          5. Normalise citation format
+                                  │
+                          on aggregation error ──▶ <span class="node">[ ERROR ]</span>
+                                  ▼
+                         <span class="node">[ CRITIC ]</span> ── validates merged evidence
+                                  │
+                      NO_GAPS ────▶ <span class="gate">[ HITL ]</span> ──▶ <span class="node">[ WRITER ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
+                                  │
+                      ABORT   ────▶ <span class="node">[ ESCALATE ]</span>
+
+<span class="label">Speed gain: 3 parallel retrievers at ~4s each = 4s total (vs. 12s sequential).</span>
+<span class="cm">Risk: workers make inconsistent assumptions. Aggregator MUST normalise before Critic sees results.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why fan-out fits</th><th>Parallel workers</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Competitive intelligence brief</strong> — research a market landscape from web news, internal deal notes (CRM SQL), and regulatory filings (KB)</td>
+          <td>Three sources are fully independent. Web latency (~3s) + SQL latency (~0.5s) + KB latency (~1s) run concurrently; total = 3s not 4.5s. Each worker scoped to one source type.</td>
+          <td>Web retriever · CRM SQL retriever · Regulatory KB retriever</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Lead enrichment pipeline</strong> — enrich incoming CRM contact with LinkedIn profile, company firmographics API, and internal customer history</td>
+          <td>Three enrichment APIs are stateless and mutually independent. Fan-out cuts enrichment from ~9s to ~3s. Aggregator merges JSON objects by field name.</td>
+          <td>LinkedIn API retriever · Firmographics API retriever · CRM history retriever</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Multi-jurisdiction legal research</strong> — same query answered from UK, EU, and US case law databases simultaneously</td>
+          <td>Jurisdiction DBs are independent. Results are aggregated by jurisdiction label. Critic checks for contradictions between jurisdictions (a different kind of gap than single-source research).</td>
+          <td>UK case law KB · EU case law KB · US case law KB</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Fan-Out with Send API</h4>
+    <pre><span class="kw">from</span> langgraph.types <span class="kw">import</span> Send
+<span class="kw">from</span> typing <span class="kw">import</span> Annotated
+<span class="kw">import</span> operator
+
+<span class="cm"># State must use an Annotated reducer to collect parallel results</span>
+<span class="kw">class</span> <span class="tp">ResearchState</span>(TypedDict):
+    evidence: Annotated[<span class="tp">list</span>, operator.add]  <span class="cm"># reducer: append, not replace</span>
+    <span class="cm"># ... other fields</span>
+
+<span class="kw">def</span> <span class="fn">route_to_retrievers</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">list</span>:
+    <span class="cm"># Send() dispatches parallel instances of the retriever node</span>
+    <span class="kw">return</span> [
+        <span class="fn">Send</span>(<span class="st">"retriever"</span>, {
+            <span class="st">"task"</span>:   task,
+            <span class="st">"run_id"</span>: state[<span class="st">"run_id"</span>],
+            <span class="st">"iter"</span>:   state[<span class="st">"retrieval_iter"</span>]
+        })
+        <span class="kw">for</span> task <span class="kw">in</span> state[<span class="st">"plan"</span>][<span class="st">"tasks"</span>]
+        <span class="kw">if</span> task[<span class="st">"role"</span>] == <span class="st">"retriever"</span> <span class="kw">and</span> task[<span class="st">"parallel"</span>]
+    ]
+
+<span class="kw">async def</span> <span class="fn">aggregator_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    snippets = []
+    seen_ids = <span class="fn">set</span>()
+    <span class="kw">for</span> result <span class="kw">in</span> state[<span class="st">"evidence"</span>]:
+        <span class="kw">for</span> s <span class="kw">in</span> result[<span class="st">"snippets"</span>]:
+            <span class="kw">if</span> s[<span class="st">"source_id"</span>] <span class="kw">not in</span> seen_ids:
+                snippets.<span class="fn">append</span>(s)
+                seen_ids.<span class="fn">add</span>(s[<span class="st">"source_id"</span>])
+    <span class="cm"># Rerank by confidence score descending, keep top 12</span>
+    snippets.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="st">"confidence"</span>], reverse=<span class="kw">True</span>)
+    <span class="kw">return</span> {<span class="st">"evidence"</span>: [snippets[:12]]}
+
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"planner"</span>,   route_to_retrievers, [<span class="st">"retriever"</span>])
+graph.<span class="fn">add_edge</span>(<span class="st">"retriever"</span>,              <span class="st">"aggregator"</span>)
+graph.<span class="fn">add_edge</span>(<span class="st">"aggregator"</span>,             <span class="st">"critic"</span>)</pre>
+
+    <h4>Langflow — Parallel Retriever Canvas</h4>
+    <pre><span class="cm">// Langflow JSON: three retriever branches converge at a custom Aggregator component</span>
+{
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"id"</span>: <span class="st">"planner"</span>,       <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-opus-4-20250514"</span>, <span class="st">"tools"</span>: [] } },
+    { <span class="st">"id"</span>: <span class="st">"ret-web"</span>,       <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+                <span class="st">"tools"</span>: [<span class="st">"TavilySearchResults"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"ret-kb"</span>,        <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+                <span class="st">"tools"</span>: [<span class="st">"AmazonBedrockKB"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"ret-sql"</span>,       <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+                <span class="st">"tools"</span>: [<span class="st">"SQLDatabase"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"aggregator"</span>,    <span class="st">"type"</span>: <span class="st">"CustomComponent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"code"</span>: <span class="st">"deduplicate_and_rerank(inputs)"</span>,
+                <span class="st">"inputs"</span>: [<span class="st">"ret-web"</span>, <span class="st">"ret-kb"</span>, <span class="st">"ret-sql"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"critic"</span>,        <span class="st">"type"</span>: <span class="st">"LLMChain"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-sonnet-4-6"</span>,
+                <span class="st">"output_schema"</span>: <span class="st">"CriticReport"</span> } }
+  ],
+  <span class="st">"edges"</span>: [
+    { <span class="st">"source"</span>: <span class="st">"planner"</span>, <span class="st">"target"</span>: <span class="st">"ret-web"</span> },
+    { <span class="st">"source"</span>: <span class="st">"planner"</span>, <span class="st">"target"</span>: <span class="st">"ret-kb"</span> },
+    { <span class="st">"source"</span>: <span class="st">"planner"</span>, <span class="st">"target"</span>: <span class="st">"ret-sql"</span> },
+    { <span class="st">"source"</span>: <span class="st">"ret-web"</span>,  <span class="st">"target"</span>: <span class="st">"aggregator"</span> },
+    { <span class="st">"source"</span>: <span class="st">"ret-kb"</span>,   <span class="st">"target"</span>: <span class="st">"aggregator"</span> },
+    { <span class="st">"source"</span>: <span class="st">"ret-sql"</span>,  <span class="st">"target"</span>: <span class="st">"aggregator"</span> },
+    { <span class="st">"source"</span>: <span class="st">"aggregator"</span>, <span class="st">"target"</span>: <span class="st">"critic"</span> }
+  ]
+}</pre>
+
+    <h4>AWS Step Functions — Parallel State</h4>
+    <pre>{
+  <span class="st">"FanOut"</span>: {
+    <span class="st">"Type"</span>: <span class="st">"Parallel"</span>,
+    <span class="st">"Branches"</span>: [
+      { <span class="st">"StartAt"</span>: <span class="st">"WebRetriever"</span>,
+        <span class="st">"States"</span>: { <span class="st">"WebRetriever"</span>: { <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+          <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+          <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"retriever-web"</span>,
+                           <span class="st">"Payload.$"</span>: <span class="st">"$.tasks[0]"</span> }, <span class="st">"End"</span>: <span class="kw">true</span> } } },
+      { <span class="st">"StartAt"</span>: <span class="st">"KBRetriever"</span>,
+        <span class="st">"States"</span>:  { <span class="st">"KBRetriever"</span>:  { <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+          <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+          <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"retriever-kb"</span>,
+                           <span class="st">"Payload.$"</span>: <span class="st">"$.tasks[1]"</span> }, <span class="st">"End"</span>: <span class="kw">true</span> } } },
+      { <span class="st">"StartAt"</span>: <span class="st">"SQLRetriever"</span>,
+        <span class="st">"States"</span>:  { <span class="st">"SQLRetriever"</span>:  { <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+          <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+          <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"retriever-sql"</span>,
+                           <span class="st">"Payload.$"</span>: <span class="st">"$.tasks[2]"</span> }, <span class="st">"End"</span>: <span class="kw">true</span> } } }
+    ],
+    <span class="st">"ResultPath"</span>: <span class="st">"$.raw_evidence"</span>,  <span class="cm">// array of 3 results</span>
+    <span class="st">"Next"</span>: <span class="st">"Aggregator"</span>
+  },
+  <span class="st">"Aggregator"</span>: {
+    <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+    <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+    <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"aggregator"</span>, <span class="st">"Payload.$"</span>: <span class="st">"$.raw_evidence"</span> },
+    <span class="st">"ResultPath"</span>: <span class="st">"$.evidence"</span>,
+    <span class="st">"Next"</span>: <span class="st">"Critic"</span>
+  }
+}</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.3 FEEDBACK LOOP -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-feedback"><a class="anchor" href="#p-feedback">3.3 Feedback Loop (Critic → Retriever Cycle)</a></h3>
+    <p>The feedback loop gives the system self-correction capability: the Critic inspects evidence, identifies gaps, and re-tasks the Retriever with refined queries until quality thresholds pass. <strong>The hard max-loop guard is not optional</strong> — without it, a poorly scoped query can recurse indefinitely.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ PLANNER ]</span> ── emits initial task list + success_criteria + abort_conditions
+      │
+      ▼
+<span class="node">[ RETRIEVER ]</span> ◀────────────────────────────────────────┐
+      │  state.retrieval_iter += 1                         │
+      │  on iter 1: use original queries from Plan         │  GAPS_FOUND:
+      │  on iter 2+: use critic_report.retry_queries       │  re-run with
+      ▼                                                    │  refined queries
+<span class="node">[ CRITIC ]</span>                                               │
+      │                                                    │
+      ├── status == <span class="label">NO_GAPS</span>  ────────────────────────────▶ exit loop
+      │                                                    │
+      ├── status == <span class="label">GAPS_FOUND</span>  AND  loops &lt; 3  ──────────┘
+      │   • increment critic_loops
+      │   • inject retry_queries into state
+      │   • clear stale evidence list
+      │
+      ├── status == <span class="label">GAPS_FOUND</span>  AND  loops ≥ 3  ──────────▶ <span class="node">[ ESCALATE ]</span>
+      │   (loop guard triggered — do not loop again)
+      │
+      └── status == <span class="label">ABORT</span>  ──────────────────────────────▶ <span class="node">[ ESCALATE ]</span>
+          (critical issue or confidence_floor &lt; 0.4)
+
+<span class="cm">After exit loop:</span>
+      │
+      ▼
+<span class="gate">[ HITL GATE ]</span> ── human sees evidence + CriticReport
+      │
+   approved ──▶ <span class="node">[ WRITER ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
+   rejected ──▶ <span class="node">[ ESCALATE ]</span>
+
+<span class="label">Loop cost: each cycle ≈ $0.02–0.08 at Haiku rates. Budget ceiling in state prevents runaway.</span>
+<span class="cm">Trace: LangSmith records each loop as a separate span — you can replay loop N to debug.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why feedback loop fits</th><th>Typical loops in practice</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Due diligence report for M&amp;A target</strong> — researches financials, litigation history, regulatory standing, and market position</td>
+          <td>Evidence quality is directly tied to deal risk. If Critic finds the litigation history is sparse, a second retrieval with more specific Gremlin queries (Neptune graph) can surface related entity cases. Human-level accuracy is the bar, not throughput.</td>
+          <td>1.6 average (80% resolve in one pass; 20% need a second)</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Technical RFP response generation</strong> — generates vendor response to a client RFP using internal capability docs, case studies, and pricing data</td>
+          <td>Critic checks that every RFP requirement section has matching evidence. Missing requirements trigger targeted re-retrieval from the case study KB. No loop = incomplete response = lost deal.</td>
+          <td>2.1 average (RFPs have many requirements; gaps are common on first pass)</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Pharmacovigilance adverse event summary</strong> — extracts and structures adverse events from clinical documents for regulatory submission</td>
+          <td>Regulatory context: every adverse event must be classified, dated, and cited. Critic checks for missing ICD codes, undated events, or unresolved severity classifications. Loop until zero unresolved flags or escalate to pharmacovigilance team.</td>
+          <td>2.8 average (high false-negative cost drives thorough looping)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Loop Control with Refined Queries</h4>
+    <pre><span class="kw">def</span> <span class="fn">route_after_critic</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">str</span>:
+    report = state[<span class="st">"critic_report"</span>]
+    loops  = state[<span class="st">"critic_loops"</span>]
+
+    <span class="kw">if</span> report[<span class="st">"status"</span>] == <span class="st">"NO_GAPS"</span>:
+        <span class="kw">return</span> <span class="st">"hitl"</span>
+
+    <span class="kw">if</span> report[<span class="st">"status"</span>] == <span class="st">"ABORT"</span> <span class="kw">or</span> loops >= 3:
+        <span class="kw">return</span> <span class="st">"escalate"</span>
+
+    <span class="cm"># GAPS_FOUND — inject refined retry queries into plan tasks</span>
+    <span class="kw">return</span> <span class="st">"retry_planner"</span>  <span class="cm"># lightweight re-planner generates new retrieval tasks</span>
+
+<span class="kw">async def</span> <span class="fn">retry_planner_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    <span class="cm"># Mini-planner: converts critic gaps into specific retrieval sub-tasks</span>
+    gaps   = state[<span class="st">"critic_report"</span>][<span class="st">"issues"</span>]
+    new_tasks = <span class="kw">await</span> gap_to_task_chain.<span class="fn">ainvoke</span>({
+        <span class="st">"original_plan"</span>: state[<span class="st">"plan"</span>],
+        <span class="st">"gaps"</span>:          gaps
+    })
+    <span class="kw">return</span> {
+        <span class="st">"plan"</span>:          {**state[<span class="st">"plan"</span>], <span class="st">"tasks"</span>: new_tasks},
+        <span class="st">"evidence"</span>:      [],          <span class="cm"># clear stale evidence</span>
+        <span class="st">"critic_loops"</span>:  state[<span class="st">"critic_loops"</span>] + 1,
+        <span class="st">"retrieval_iter"</span>: state[<span class="st">"retrieval_iter"</span>] + 1
+    }
+
+graph.<span class="fn">add_conditional_edges</span>(
+    <span class="st">"critic"</span>, route_after_critic,
+    {<span class="st">"hitl"</span>:<span class="st">"hitl"</span>, <span class="st">"escalate"</span>:<span class="st">"escalate"</span>, <span class="st">"retry_planner"</span>:<span class="st">"retry_planner"</span>}
+)
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"retry_planner"</span>, route_to_retrievers, [<span class="st">"retriever"</span>])</pre>
+
+    <h4>n8n — Feedback Loop with Loop Over Items</h4>
+    <pre><span class="cm">// n8n: Loop Over Items node tracks iteration count in static workflow data</span>
+{
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Loop Guard"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.if"</span>,
+      <span class="st">"parameters"</span>: {
+        <span class="st">"conditions"</span>: [{
+          <span class="st">"value1"</span>: <span class="st">"={{ $workflow.staticData.critic_loops }}"</span>,
+          <span class="st">"operation"</span>: <span class="st">"smaller"</span>, <span class="st">"value2"</span>: 3
+        }]
+      }
+    },
+    { <span class="st">"name"</span>: <span class="st">"Increment Loop"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.set"</span>,
+      <span class="st">"parameters"</span>: {
+        <span class="st">"assignments"</span>: [{
+          <span class="st">"name"</span>: <span class="st">"critic_loops"</span>,
+          <span class="st">"value"</span>: <span class="st">"={{ $workflow.staticData.critic_loops + 1 }}"</span>
+        }]
+      }
+    },
+    { <span class="st">"name"</span>: <span class="st">"Route on Critic Status"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.switch"</span>,
+      <span class="st">"parameters"</span>: {
+        <span class="st">"dataPropertyName"</span>: <span class="st">"critic_report.status"</span>,
+        <span class="st">"rules"</span>: [
+          { <span class="st">"value"</span>: <span class="st">"NO_GAPS"</span>,   <span class="st">"output"</span>: 0 },
+          { <span class="st">"value"</span>: <span class="st">"GAPS_FOUND"</span>, <span class="st">"output"</span>: 1 },
+          { <span class="st">"value"</span>: <span class="st">"ABORT"</span>,      <span class="st">"output"</span>: 2 }
+        ]
+      }
+    }
+  ],
+  <span class="st">"connections"</span>: {
+    <span class="st">"Route on Critic Status"</span>: {
+      <span class="st">"main"</span>: [
+        [{ <span class="st">"node"</span>: <span class="st">"HITL Gate"</span> }],          <span class="cm">// output 0: NO_GAPS</span>
+        [{ <span class="st">"node"</span>: <span class="st">"Loop Guard"</span> }],         <span class="cm">// output 1: GAPS_FOUND</span>
+        [{ <span class="st">"node"</span>: <span class="st">"Escalate"</span> }]            <span class="cm">// output 2: ABORT</span>
+      ]
+    },
+    <span class="st">"Loop Guard"</span>: {
+      <span class="st">"main"</span>: [
+        [{ <span class="st">"node"</span>: <span class="st">"Increment Loop"</span> }],    <span class="cm">// true: loops &lt; 3, continue</span>
+        [{ <span class="st">"node"</span>: <span class="st">"Escalate"</span> }]           <span class="cm">// false: loops ≥ 3, escalate</span>
+      ]
+    },
+    <span class="st">"Increment Loop"</span>: { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Retriever"</span> }]] }
+  }
+}</pre>
+
+    <h4>LangSmith — Tracking Loop Quality Over Time</h4>
+    <pre><span class="cm"># Tag each loop iteration so LangSmith can track quality per iteration</span>
+<span class="kw">import</span> os
+os.environ[<span class="st">"LANGCHAIN_TRACING_V2"</span>] = <span class="st">"true"</span>
+
+<span class="kw">from</span> langsmith <span class="kw">import</span> traceable
+
+@<span class="fn">traceable</span>(tags=[<span class="st">"feedback-loop"</span>], metadata={<span class="st">"loop_iter"</span>: <span class="st">"{{critic_loops}}"</span>})
+<span class="kw">async def</span> <span class="fn">critic_node</span>(state):
+    <span class="cm"># LangSmith records: which loop iteration, input evidence, output report</span>
+    <span class="cm"># Dashboard query: avg critic_loops where status == "NO_GAPS" → quality trend</span>
+    report = <span class="kw">await</span> critic_chain.<span class="fn">ainvoke</span>(state[<span class="st">"evidence"</span>])
+    <span class="kw">return</span> {<span class="st">"critic_report"</span>: report, <span class="st">"critic_loops"</span>: state[<span class="st">"critic_loops"</span>] + 1}</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.4 HIERARCHICAL -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-hierarchical"><a class="anchor" href="#p-hierarchical">3.4 Hierarchical Tree (Supervisor → Worker Squads)</a></h3>
+    <p>For large tasks spanning multiple domains, a Supervisor decomposes the problem into domain squads, each of which runs the full 4-agent pipeline independently. A Synthesis Writer at the top merges their outputs. <strong>Never pass full text upward — only citation IDs</strong>; the Synthesis Writer fetches full snippets from a shared evidence store.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ USER QUERY ]</span>
+      │
+      ▼
+<span class="node">[ SUPERVISOR PLANNER ]</span>  ← frontier model (Claude Opus 4)
+  • Decomposes into domain sub-plans
+  • Assigns each sub-plan to a Squad
+  • Defines cross-squad HITL gates
+      │
+      ├───────────────────┬───────────────────┐
+      ▼                   ▼                   ▼
+<span class="node">[ SQUAD A: Legal  ]</span>  <span class="node">[ SQUAD B: Tech   ]</span>  <span class="node">[ SQUAD C: Finance]</span>
+  Full pipeline:         Full pipeline:         Full pipeline:
+  Planner                Planner                Planner
+  → Retriever(s)         → Retriever(s)         → Retriever(s)
+  → Critic               → Critic               → Critic
+  → Writer               → Writer               → Writer
+  → SquadReport_A        → SquadReport_B        → SquadReport_C
+      │                       │                       │
+      │  passes: citation IDs + squad_confidence      │
+      └───────────────────┬───────────────────────────┘
+                          ▼
+                  <span class="store">[ SHARED EVIDENCE STORE ]</span>  ← S3 / DynamoDB / pgvector
+                  (full snippets keyed by citation ID)
+                          │
+                          ▼
+                  <span class="node">[ SYNTHESIS WRITER ]</span>
+                  • Fetches snippets by citation ID
+                  • Merges squad findings
+                  • Flags cross-squad contradictions
+                          │
+                  <span class="gate">[ HITL GATE ]</span>  ← cross-domain expert reviews
+                          │
+                  <span class="node">[ FINAL OUTPUT ]</span>
+
+<span class="cm">Risk: information loss at each squad boundary.
+Guard: Synthesis Writer queries evidence store directly — NOT squad summaries.</span>
+<span class="label">Cost: N squads × per-squad cost. Use Haiku for squad Retrievers; Opus only at Supervisor.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why hierarchy fits</th><th>Squad decomposition</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Enterprise AI vendor assessment</strong> — evaluates 3 AI platform vendors across security, legal compliance, technical capability, and commercial terms</td>
+          <td>Each domain (security, legal, tech, commercial) requires specialist tools (SIEM KB, contract DB, benchmark DB, pricing DB). Squads run in parallel. No squad can assess another's domain. Synthesis Writer produces the final scorecard.</td>
+          <td>Security squad · Legal/compliance squad · Technical eval squad · Commercial squad</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Multi-jurisdiction regulatory gap analysis</strong> — determines what changes are needed to comply with GDPR (EU), CCPA (US), and PDPA (Thailand) simultaneously</td>
+          <td>Jurisdiction-specific case law and regulator guidance differs. Each squad works from its own KB. Synthesis Writer identifies where a single policy change satisfies multiple jurisdictions (cost optimisation for compliance team).</td>
+          <td>EU/GDPR squad · US/CCPA squad · APAC/PDPA squad</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Product launch readiness report</strong> — aggregates go-to-market, engineering readiness, customer support prep, and legal sign-off into one executive report</td>
+          <td>Each function owns its own readiness criteria and evidence. Function teams can run their squad in parallel with other functions. Supervisor sets a cross-squad success criterion: all squads must reach "ready" before the launch gate.</td>
+          <td>GTM squad · Engineering squad · Support squad · Legal squad</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Sub-Graphs for Each Squad</h4>
+    <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+
+<span class="cm"># Each squad is its own compiled sub-graph</span>
+<span class="kw">def</span> <span class="fn">build_squad_graph</span>(domain: <span class="tp">str</span>) -> <span class="tp">CompiledGraph</span>:
+    g = StateGraph(<span class="tp">SquadState</span>)
+    g.<span class="fn">add_node</span>(<span class="st">"planner"</span>,   <span class="fn">make_planner</span>(domain))
+    g.<span class="fn">add_node</span>(<span class="st">"retriever"</span>, <span class="fn">make_retriever</span>(domain))
+    g.<span class="fn">add_node</span>(<span class="st">"critic"</span>,    critic_node)
+    g.<span class="fn">add_node</span>(<span class="st">"writer"</span>,    <span class="fn">make_writer</span>(domain))
+    g.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+    g.<span class="fn">add_edge</span>(<span class="st">"planner"</span>,   <span class="st">"retriever"</span>)
+    g.<span class="fn">add_conditional_edges</span>(<span class="st">"retriever"</span>, ..., [<span class="st">"critic"</span>])
+    g.<span class="fn">add_conditional_edges</span>(<span class="st">"critic"</span>, ..., {<span class="st">"ok"</span>:<span class="st">"writer"</span>, <span class="st">"retry"</span>:<span class="st">"retriever"</span>})
+    g.<span class="fn">add_edge</span>(<span class="st">"writer"</span>, END)
+    <span class="kw">return</span> g.<span class="fn">compile</span>(checkpointer=postgres_saver)
+
+legal_squad   = <span class="fn">build_squad_graph</span>(<span class="st">"legal"</span>)
+tech_squad    = <span class="fn">build_squad_graph</span>(<span class="st">"technology"</span>)
+finance_squad = <span class="fn">build_squad_graph</span>(<span class="st">"finance"</span>)
+
+<span class="cm"># Top-level graph treats each squad as a node</span>
+top = StateGraph(<span class="tp">SupervisorState</span>)
+top.<span class="fn">add_node</span>(<span class="st">"supervisor"</span>, supervisor_planner_node)
+top.<span class="fn">add_node</span>(<span class="st">"legal"</span>,      legal_squad)   <span class="cm"># sub-graph as node</span>
+top.<span class="fn">add_node</span>(<span class="st">"tech"</span>,       tech_squad)
+top.<span class="fn">add_node</span>(<span class="st">"finance"</span>,    finance_squad)
+top.<span class="fn">add_node</span>(<span class="st">"synthesiser"</span>,synthesis_writer_node)
+top.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,       hitl_node)
+
+top.<span class="fn">set_entry_point</span>(<span class="st">"supervisor"</span>)
+<span class="cm"># Fan-out to all squads (Send API)</span>
+top.<span class="fn">add_conditional_edges</span>(<span class="st">"supervisor"</span>, route_to_squads, [<span class="st">"legal"</span>,<span class="st">"tech"</span>,<span class="st">"finance"</span>])
+top.<span class="fn">add_edge</span>(<span class="st">"legal"</span>,    <span class="st">"synthesiser"</span>)
+top.<span class="fn">add_edge</span>(<span class="st">"tech"</span>,     <span class="st">"synthesiser"</span>)
+top.<span class="fn">add_edge</span>(<span class="st">"finance"</span>,  <span class="st">"synthesiser"</span>)
+top.<span class="fn">add_edge</span>(<span class="st">"synthesiser"</span>, <span class="st">"hitl"</span>)
+top.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_hitl, {<span class="st">"approved"</span>: END, <span class="st">"rejected"</span>: <span class="st">"escalate"</span>})</pre>
+
+    <h4>AWS Step Functions — Nested State Machines</h4>
+    <pre>{
+  <span class="st">"StartAt"</span>: <span class="st">"SupervisorPlanner"</span>,
+  <span class="st">"States"</span>: {
+    <span class="st">"SupervisorPlanner"</span>: {
+      <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+      <span class="st">"Resource"</span>: <span class="st">"arn:aws:lambda:::function:supervisor-planner"</span>,
+      <span class="st">"ResultPath"</span>: <span class="st">"$.domain_plans"</span>, <span class="st">"Next"</span>: <span class="st">"SquadExecution"</span>
+    },
+    <span class="st">"SquadExecution"</span>: {
+      <span class="st">"Type"</span>: <span class="st">"Parallel"</span>,
+      <span class="st">"Branches"</span>: [
+        { <span class="st">"StartAt"</span>: <span class="st">"LegalSquad"</span>,
+          <span class="st">"States"</span>: { <span class="st">"LegalSquad"</span>: {
+            <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+            <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::states:startExecution.sync"</span>,
+            <span class="st">"Parameters"</span>: {
+              <span class="st">"StateMachineArn"</span>: <span class="st">"arn:aws:states:::stateMachine:squad-pipeline"</span>,
+              <span class="st">"Input"</span>: { <span class="st">"domain"</span>: <span class="st">"legal"</span>, <span class="st">"plan.$"</span>: <span class="st">"$.domain_plans.legal"</span> }
+            }, <span class="st">"End"</span>: <span class="kw">true</span>
+          }}
+        }
+        <span class="cm">// ... TechSquad, FinanceSquad branches identical</span>
+      ],
+      <span class="st">"ResultPath"</span>: <span class="st">"$.squad_outputs"</span>,
+      <span class="st">"Next"</span>: <span class="st">"SynthesisWriter"</span>
+    },
+    <span class="st">"SynthesisWriter"</span>: {
+      <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+      <span class="st">"Resource"</span>: <span class="st">"arn:aws:lambda:::function:synthesis-writer"</span>,
+      <span class="st">"Parameters"</span>: {
+        <span class="st">"citation_ids.$"</span>: <span class="st">"$.squad_outputs[*].citation_ids"</span>,
+        <span class="st">"evidence_store_table"</span>: <span class="st">"research-evidence"</span>
+      }, <span class="st">"Next"</span>: <span class="st">"HITLGate"</span>
+    }
+  }
+}</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.5 ORCHESTRATOR-WORKER -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-orchestrator"><a class="anchor" href="#p-orchestrator">3.5 Orchestrator-Worker (Dynamic Task Dispatch)</a></h3>
+    <p>An Orchestrator agent maintains a task queue and dynamically selects and dispatches to specialist Worker agents based on the current state. Unlike the Hierarchical Tree where squads are predetermined, the Orchestrator can choose <em>which</em> worker to invoke next based on intermediate results. This pattern enables true dynamic routing — but makes it harder to trace and debug than static graphs.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ USER REQUEST ]</span>
+      │
+      ▼
+<span class="node">[ ORCHESTRATOR ]</span>  ← stateful; sees all previous results
+  • Maintains task queue
+  • Selects next worker based on current state
+  • Re-evaluates queue after each worker completes
+  • Terminates when all tasks done OR abort condition met
+      │
+      │  select_next_worker(state) → worker_type
+      │
+      ├──────────────────────────────────────────────────────┐
+      │                                                       │
+    ┌─▼──────────────┐    ┌─────────────────┐    ┌──────────▼──────┐
+    │ <span class="node">WORKER: Search  </span>│    │ <span class="node">WORKER: Analyst </span>│    │ <span class="node">WORKER: Drafter </span>│
+    │ (retriever)    │    │ (critic/QA)     │    │ (writer)        │
+    │ tools: web, KB │    │ tools: none     │    │ tools: none     │
+    └────────────────┘    └─────────────────┘    └─────────────────┘
+      │                          │                       │
+      └──────────────────────────▼───────────────────────┘
+                         results written to shared state
+                                 │
+                         Orchestrator re-evaluates:
+                         • task_queue empty → done
+                         • new tasks revealed by results → continue
+                         • abort condition met → escalate
+
+<span class="label">Key difference from Hierarchical: Orchestrator can invoke Worker A → Worker B → Worker A again.
+                                   The path is not predetermined.</span>
+<span class="cm">Risk: Orchestrator context window grows with every iteration. Use state summarisation node.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why Orchestrator-Worker fits</th><th>Workers used</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>IT support ticket triage and resolution</strong> — analyses incoming support tickets, routes to correct resolution path, may need to query multiple systems before resolving</td>
+          <td>Each ticket is unique. Some need only a KB lookup; others need DB query + log analysis + escalation. The Orchestrator decides after each step whether to search again, escalate, or draft a response. Static graph would need 2<sup>N</sup> branches.</td>
+          <td>KB search worker · Log analysis worker · Ticketing system writer · Escalation worker</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Sales intelligence assistant</strong> — answers rep questions about prospects by dynamically choosing between CRM, web search, news, and internal docs</td>
+          <td>Question type determines tool sequence. "What's their tech stack?" → web search. "Did we speak before?" → CRM query. "Are they in the news?" → news API. Orchestrator chains these dynamically without pre-specifying the path.</td>
+          <td>CRM reader · Web search · News API · Internal docs KB · Draft email</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Code review and remediation agent</strong> — reviews a PR diff, identifies issues, fetches relevant docs, suggests fixes, and drafts a code review comment</td>
+          <td>Number and type of issues found by the first pass determines what the Orchestrator does next (security doc lookup, language spec lookup, or draft immediately). Dynamic ordering beats a predetermined pipeline.</td>
+          <td>Static analysis tool · Security KB · Language spec KB · Code fixer · Comment drafter</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — ReAct-Style Orchestrator</h4>
+    <pre><span class="kw">from</span> langgraph.prebuilt <span class="kw">import</span> create_react_agent
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+
+<span class="cm"># Define workers as typed tools the Orchestrator can call</span>
+<span class="kw">from</span> langchain.tools <span class="kw">import</span> StructuredTool
+
+search_worker = StructuredTool(
+    name=<span class="st">"search"</span>,
+    description=<span class="st">"Search web and KB for information about a topic"</span>,
+    func=search_worker_fn,
+    args_schema=SearchInput
+)
+analyst_worker = StructuredTool(
+    name=<span class="st">"analyse"</span>,
+    description=<span class="st">"Critically analyse a set of evidence snippets for gaps"</span>,
+    func=analyst_worker_fn,
+    args_schema=AnalystInput
+)
+drafter_worker = StructuredTool(
+    name=<span class="st">"draft"</span>,
+    description=<span class="st">"Draft a structured output from approved evidence"</span>,
+    func=drafter_worker_fn,
+    args_schema=DraftInput
+)
+
+<span class="cm"># Orchestrator: ReAct agent with workers as tools</span>
+orchestrator = <span class="fn">create_react_agent</span>(
+    model=claude_opus_4,
+    tools=[search_worker, analyst_worker, drafter_worker],
+    state_schema=<span class="tp">OrchestratorState</span>,
+    checkpointer=postgres_saver
+)
+
+<span class="cm"># Wrap in outer graph for HITL gate</span>
+outer = StateGraph(<span class="tp">OrchestratorState</span>)
+outer.<span class="fn">add_node</span>(<span class="st">"orchestrator"</span>, orchestrator)
+outer.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,          hitl_node)
+outer.<span class="fn">set_entry_point</span>(<span class="st">"orchestrator"</span>)
+outer.<span class="fn">add_edge</span>(<span class="st">"orchestrator"</span>, <span class="st">"hitl"</span>)
+outer.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_hitl, {<span class="st">"approved"</span>: END, <span class="st">"rejected"</span>: <span class="st">"escalate"</span>})</pre>
+
+    <h4>n8n — Orchestrator with Dynamic Branch Selection</h4>
+    <pre><span class="cm">// AI Agent node in n8n acts as Orchestrator — it decides which tools to call</span>
+{
+  <span class="st">"name"</span>: <span class="st">"Orchestrator Agent"</span>,
+  <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+  <span class="st">"parameters"</span>: {
+    <span class="st">"model"</span>: <span class="st">"claude-opus-4"</span>,
+    <span class="st">"systemMessage"</span>: <span class="st">"You are an orchestrator. Use the provided tools in whatever order needed to complete the task. Always use `analyse` before `draft`. Max 10 tool calls total."</span>,
+    <span class="st">"tools"</span>: [
+      <span class="st">"search_kb"</span>,       <span class="cm">// n8n: Vector Store Tool</span>
+      <span class="st">"search_web"</span>,      <span class="cm">// n8n: HTTP Request → Tavily</span>
+      <span class="st">"query_crm"</span>,       <span class="cm">// n8n: HubSpot / Salesforce node</span>
+      <span class="st">"analyse"</span>,         <span class="cm">// n8n: sub-workflow call (analyst agent)</span>
+      <span class="st">"draft_output"</span>     <span class="cm">// n8n: sub-workflow call (writer agent)</span>
+    ],
+    <span class="st">"maxIterations"</span>: 10,
+    <span class="st">"returnIntermediateSteps"</span>: <span class="kw">true</span>  <span class="cm">// for audit trail</span>
+  }
+}</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.6 BLACKBOARD / MESH -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-blackboard"><a class="anchor" href="#p-blackboard">3.6 Blackboard / Mesh</a></h3>
+    <p>In the Blackboard pattern, agents do not call each other directly — they read from and write to a shared structured event store (the "blackboard"). Each agent watches for relevant state changes and reacts. This enables emergent coordination but sacrifices determinism. <strong>Use only for exploratory, non-compliance-critical workflows.</strong></p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="cm">── Traditional (sequential/tree): agents call each other ──────────────────────</span>
+  A ──▶ B ──▶ C  (predetermined path)
+
+<span class="cm">── Blackboard: agents publish/subscribe to shared store ───────────────────────</span>
+
+                    <span class="store">┌─────────────────────────────────┐</span>
+                    <span class="store">│       BLACKBOARD (event store)  │</span>
+                    <span class="store">│  events: [                      │</span>
+                    <span class="store">│    {type:"query_posted",   ...} │</span>
+                    <span class="store">│    {type:"evidence_added", ...} │</span>
+                    <span class="store">│    {type:"gap_found",      ...} │</span>
+                    <span class="store">│    {type:"draft_ready",    ...} │</span>
+                    <span class="store">│  ]                              │</span>
+                    <span class="store">└──────┬──────────────────────────┘</span>
+                           │ subscribe / publish
+              ┌────────────┼─────────────┬──────────────┐
+              │            │             │              │
+              ▼            ▼             ▼              ▼
+     <span class="node">[ PLANNER  ]</span>   <span class="node">[ RETRIEVER]</span>  <span class="node">[ CRITIC   ]</span>  <span class="node">[ WRITER   ]</span>
+     watches:       watches:       watches:       watches:
+     query_posted   task_assigned  evidence_added draft_requested
+     publishes:     publishes:     publishes:     publishes:
+     tasks[]        evidence[]     gap_found[]    draft_ready
+
+<span class="label">Each agent is autonomous: it wakes when its trigger condition is met, acts, and publishes results.
+Multiple agents can act simultaneously if their triggers fire at the same time.</span>
+<span class="cm">Risk: non-deterministic execution order. Never use for compliance, financial, or regulated outputs.
+Guard: max event count, TTL per run, mandatory HITL before any external action.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why Blackboard fits</th><th>Avoid if…</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Open-ended market scanning</strong> — continuously monitors news, social, and filings for signals about a company or sector; agents self-trigger when relevant signals arrive</td>
+          <td>No predetermined sequence. Signal volume varies. Multiple agents (trend spotter, sentiment scorer, alert drafter) can react to the same event independently. Emergent alerting patterns are acceptable.</td>
+          <td>The output triggers financial trades or regulatory filings — use sequential + HITL instead</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Collaborative R&amp;D hypothesis generation</strong> — multiple specialist agents (biology, chemistry, clinical) post hypotheses to a shared board; others comment, extend, or contradict</td>
+          <td>Creative ideation benefits from non-linear interaction. A chemistry agent's finding might trigger a biology agent to re-examine its hypothesis. The goal is breadth of ideas, not a single deterministic output.</td>
+          <td>Results feed directly into patient treatment decisions — add deterministic gate layer</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Internal knowledge maintenance bot</strong> — monitors document update events, triggers the relevant specialist agent to refresh related KB entries when source docs change</td>
+          <td>Event-driven: a new policy document triggers Legal agent; a new product spec triggers Technical Writer agent. Agents are independent and can run concurrently without knowing about each other.</td>
+          <td>Edits go directly to production-facing docs — add approval gate before publish</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Shared State as Blackboard</h4>
+    <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+<span class="kw">from</span> typing <span class="kw">import</span> Annotated
+<span class="kw">import</span> operator
+
+<span class="kw">class</span> <span class="tp">BlackboardState</span>(TypedDict):
+    events:     Annotated[<span class="tp">list</span>, operator.add]   <span class="cm"># append-only event log</span>
+    tasks:      Annotated[<span class="tp">list</span>, operator.add]
+    evidence:   Annotated[<span class="tp">list</span>, operator.add]
+    gaps:       Annotated[<span class="tp">list</span>, operator.add]
+    drafts:     Annotated[<span class="tp">list</span>, operator.add]
+    iteration:  <span class="tp">int</span>
+    status:     <span class="tp">str</span>
+
+<span class="kw">def</span> <span class="fn">route_blackboard</span>(state: <span class="tp">BlackboardState</span>) -> <span class="tp">str</span>:
+    <span class="cm"># Router inspects latest event to decide next active agent</span>
+    last_event = state[<span class="st">"events"</span>][-1][<span class="st">"type"</span>] <span class="kw">if</span> state[<span class="st">"events"</span>] <span class="kw">else</span> <span class="st">"start"</span>
+    <span class="kw">if</span> state[<span class="st">"iteration"</span>] > 20: <span class="kw">return</span> <span class="st">"escalate"</span>   <span class="cm"># hard event count guard</span>
+    <span class="kw">if</span> last_event == <span class="st">"query_posted"</span>:    <span class="kw">return</span> <span class="st">"planner"</span>
+    <span class="kw">if</span> last_event == <span class="st">"tasks_published"</span>: <span class="kw">return</span> <span class="st">"retriever"</span>
+    <span class="kw">if</span> last_event == <span class="st">"evidence_added"</span>:  <span class="kw">return</span> <span class="st">"critic"</span>
+    <span class="kw">if</span> last_event == <span class="st">"gap_found"</span>:       <span class="kw">return</span> <span class="st">"retriever"</span>
+    <span class="kw">if</span> last_event == <span class="st">"no_gaps"</span>:         <span class="kw">return</span> <span class="st">"hitl"</span>
+    <span class="kw">return</span> <span class="st">"escalate"</span>
+
+g = StateGraph(<span class="tp">BlackboardState</span>)
+g.<span class="fn">add_node</span>(<span class="st">"planner"</span>,    planner_node)
+g.<span class="fn">add_node</span>(<span class="st">"retriever"</span>,  retriever_node)
+g.<span class="fn">add_node</span>(<span class="st">"critic"</span>,     critic_node)
+g.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,       hitl_node)
+g.<span class="fn">add_node</span>(<span class="st">"escalate"</span>,   escalation_node)
+
+g.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+<span class="cm"># All nodes return to the router — router decides who acts next</span>
+<span class="kw">for</span> node <span class="kw">in</span> [<span class="st">"planner"</span>, <span class="st">"retriever"</span>, <span class="st">"critic"</span>]:
+    g.<span class="fn">add_conditional_edges</span>(node, route_blackboard,
+        {<span class="st">"planner"</span>:<span class="st">"planner"</span>, <span class="st">"retriever"</span>:<span class="st">"retriever"</span>, <span class="st">"critic"</span>:<span class="st">"critic"</span>,
+         <span class="st">"hitl"</span>:<span class="st">"hitl"</span>, <span class="st">"escalate"</span>:<span class="st">"escalate"</span>})</pre>
+
+    <div class="callout callout-warn">
+      <strong>Blackboard in production: mandatory guards.</strong> (1) Hard event-count ceiling — abort at N=20 events regardless of state. (2) TTL per run — expire after 30 minutes max. (3) HITL gate is non-negotiable before any write action. (4) LangSmith tracing must be enabled — without it, debugging emergent behaviour is impossible. Use the blackboard pattern <em>only</em> in internal-facing exploratory systems, never on externally-published outputs.
+    </div>
+
+    <h4>n8n — Event-Driven Mesh via Webhook Triggers</h4>
+    <pre><span class="cm">// n8n: each agent is a separate workflow triggered by webhooks</span>
+<span class="cm">// They communicate via a shared n8n variable store or Postgres</span>
+
+<span class="cm">// Planner workflow — triggered by new user query webhook</span>
+{ <span class="st">"trigger"</span>: { <span class="st">"type"</span>: <span class="st">"webhook"</span>, <span class="st">"path"</span>: <span class="st">"query_posted"</span> },
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Planner Agent"</span>, ... },
+    { <span class="st">"name"</span>: <span class="st">"Publish Tasks"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.httpRequest"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"url"</span>: <span class="st">"http://n8n/webhook/tasks_published"</span>,
+                        <span class="st">"method"</span>: <span class="st">"POST"</span>, <span class="st">"body"</span>: <span class="st">"={{ $json.tasks }}"</span> } }
+  ]
+}
+
+<span class="cm">// Retriever workflow — triggered by tasks_published webhook</span>
+{ <span class="st">"trigger"</span>: { <span class="st">"type"</span>: <span class="st">"webhook"</span>, <span class="st">"path"</span>: <span class="st">"tasks_published"</span> },
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Retriever Agent"</span>, ... },
+    { <span class="st">"name"</span>: <span class="st">"Publish Evidence"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.httpRequest"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"url"</span>: <span class="st">"http://n8n/webhook/evidence_added"</span> } }
+  ]
+}
+
+<span class="cm">// Each agent workflow follows the same pub/sub pattern.
+// n8n's execution log becomes the de-facto blackboard audit trail.</span></pre>
+
+  </section>
+
+  <!-- ===== CHAPTER 4 ===== -->
+  <section id="ch4">
+    <h2><a class="anchor" href="#ch4">4. Tool-by-Tool Implementation Templates</a></h2>
+    <p>The same 4-agent pattern runs in every major tool. The choice is about control, hosting, and team capability — not which architecture to use.</p>
+
+    <!-- 4.1 LANGGRAPH -->
+    <h3 id="t-langgraph"><a class="anchor" href="#t-langgraph">4.1 <span class="tool-badge tb-lg">◆ LangGraph</span> — Stateful Graph Implementation</a></h3>
+    <p>LangGraph is the production default for workflows that need durable state, cycles, and deterministic HITL interrupts. Used in production at Uber, JPMorgan, LinkedIn, Klarna (LangGraph v1.0, Oct 2025).</p>
+
+    <table>
+      <thead><tr><th>Capability</th><th>LangGraph Primitive</th><th>Research Squad Usage</th></tr></thead>
+      <tbody>
+        <tr><td>Typed state</td><td><code>TypedDict</code> + <code>Annotated</code> reducers</td><td><code>ResearchState</code> — single source of truth across all nodes</td></tr>
+        <tr><td>Durable checkpointing</td><td><code>PostgresSaver</code> / <code>RedisSaver</code></td><td>Long-running research survives restarts; state loadable by run_id</td></tr>
+        <tr><td>HITL interrupt</td><td><code>interrupt_before=["hitl"]</code> at compile time</td><td>Pauses graph before Writer publishes; resumes on human approve/reject</td></tr>
+        <tr><td>Parallel fan-out</td><td><code>Send</code> API in conditional edge</td><td>Dispatches N Retriever calls concurrently; aggregates into shared state</td></tr>
+        <tr><td>Conditional routing</td><td><code>add_conditional_edges</code> with router function</td><td>Critic status (NO_GAPS / GAPS_FOUND / ABORT) drives next node</td></tr>
+        <tr><td>Observability</td><td>Native LangSmith integration (auto-traces)</td><td>Every node emits span with inputs, outputs, latency, token count</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Full Research Squad Graph — Production Template</h4>
+    <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+<span class="kw">from</span> langgraph.checkpoint.postgres <span class="kw">import</span> PostgresSaver
+<span class="kw">from</span> langgraph.types <span class="kw">import</span> Send, interrupt
+
+<span class="cm"># ── Node implementations (each wraps a Claude / GPT call) ──────────────</span>
+<span class="kw">async def</span> <span class="fn">planner_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    result = <span class="kw">await</span> planner_chain.<span class="fn">ainvoke</span>(state.user_query)
+    <span class="kw">return</span> {<span class="st">"plan"</span>: result, <span class="st">"status"</span>: <span class="st">"retrieving"</span>}
+
+<span class="kw">async def</span> <span class="fn">retriever_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    task = state[<span class="st">"task"</span>]  <span class="cm"># injected via Send</span>
+    result = <span class="kw">await</span> retriever_chain.<span class="fn">ainvoke</span>(task)
+    <span class="kw">return</span> {<span class="st">"evidence"</span>: [result]}  <span class="cm"># Annotated reducer appends to list</span>
+
+<span class="kw">async def</span> <span class="fn">critic_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    report = <span class="kw">await</span> critic_chain.<span class="fn">ainvoke</span>(state.evidence)
+    <span class="kw">return</span> {<span class="st">"critic_report"</span>: report, <span class="st">"critic_loops"</span>: state.critic_loops + 1}
+
+<span class="kw">async def</span> <span class="fn">hitl_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    decision = <span class="fn">interrupt</span>({  <span class="cm"># pauses graph; resumes when .update() called</span>
+        <span class="st">"critic_report"</span>: state.critic_report,
+        <span class="st">"evidence_count"</span>: <span class="fn">len</span>(state.evidence)
+    })
+    <span class="kw">return</span> {<span class="st">"hitl_decision"</span>: decision, <span class="st">"hitl_pending"</span>: <span class="kw">False</span>}
+
+<span class="kw">async def</span> <span class="fn">writer_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    draft = <span class="kw">await</span> writer_chain.<span class="fn">ainvoke</span>(state.evidence)
+    <span class="kw">return</span> {<span class="st">"final_output"</span>: draft, <span class="st">"status"</span>: <span class="st">"complete"</span>}
+
+<span class="cm"># ── Graph assembly ──────────────────────────────────────────────────────</span>
+builder = StateGraph(<span class="tp">ResearchState</span>)
+builder.<span class="fn">add_node</span>(<span class="st">"planner"</span>,   planner_node)
+builder.<span class="fn">add_node</span>(<span class="st">"retriever"</span>, retriever_node)
+builder.<span class="fn">add_node</span>(<span class="st">"aggregator"</span>,aggregator_node)
+builder.<span class="fn">add_node</span>(<span class="st">"critic"</span>,    critic_node)
+builder.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,      hitl_node)
+builder.<span class="fn">add_node</span>(<span class="st">"writer"</span>,    writer_node)
+builder.<span class="fn">add_node</span>(<span class="st">"escalate"</span>,  escalation_node)
+
+builder.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+builder.<span class="fn">add_conditional_edges</span>(<span class="st">"planner"</span>, route_to_retrievers, [<span class="st">"retriever"</span>])
+builder.<span class="fn">add_edge</span>(<span class="st">"retriever"</span>,  <span class="st">"aggregator"</span>)
+builder.<span class="fn">add_edge</span>(<span class="st">"aggregator"</span>, <span class="st">"critic"</span>)
+builder.<span class="fn">add_conditional_edges</span>(<span class="st">"critic"</span>, route_after_critic,
+    {<span class="st">"hitl"</span>:<span class="st">"hitl"</span>, <span class="st">"retriever"</span>:<span class="st">"retriever"</span>, <span class="st">"escalate"</span>:<span class="st">"escalate"</span>})
+builder.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_after_hitl,
+    {<span class="st">"approved"</span>:<span class="st">"writer"</span>, <span class="st">"rejected"</span>:<span class="st">"escalate"</span>})
+builder.<span class="fn">add_edge</span>(<span class="st">"writer"</span>, END)
+
+app = builder.<span class="fn">compile</span>(
+    checkpointer=<span class="fn">PostgresSaver</span>.from_conn_string(POSTGRES_URL),
+    interrupt_before=[<span class="st">"hitl"</span>]   <span class="cm"># hard pause before human gate</span>
+)</pre>
+
+    <!-- 4.2 LANGFLOW -->
+    <h3 id="t-langflow"><a class="anchor" href="#t-langflow">4.2 <span class="tool-badge tb-lf">◈ Langflow</span> — Visual Canvas Template</a></h3>
+    <p>Langflow provides a drag-and-drop canvas over LangChain and LangGraph components. No code required to wire the research squad; export the flow as JSON for version control.</p>
+
+    <table>
+      <thead><tr><th>Component in Langflow</th><th>Maps to</th><th>Configuration</th></tr></thead>
+      <tbody>
+        <tr><td>ChatInput → AgentComponent</td><td>Planner</td><td>Model: Claude Opus 4 · System Prompt: paste planner template · Output: JSON</td></tr>
+        <tr><td>ToolCallingAgent (×N parallel)</td><td>Retrievers</td><td>Model: Claude Haiku 4 · Tools: TavilySearch + AmazonBedrock KB · Memory: disabled</td></tr>
+        <tr><td>LLMChain with structured output</td><td>Critic</td><td>Model: Claude Sonnet · Output Schema: CriticReport · Connect to Conditional Router</td></tr>
+        <tr><td>ConditionalRouter</td><td>Feedback loop gate</td><td>Condition: <code>critic_status == "NO_GAPS"</code> → Writer · else → Retrievers</td></tr>
+        <tr><td>ChatOutput with template</td><td>Writer</td><td>Model: Claude Sonnet · Input: only validated evidence IDs · Tools: none</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Langflow Export JSON Skeleton</h4>
+    <pre>{
+  <span class="st">"nodes"</span>: [
+    {
+      <span class="st">"id"</span>: <span class="st">"planner-001"</span>, <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: {
+        <span class="st">"model_name"</span>: <span class="st">"claude-opus-4-20250514"</span>,
+        <span class="st">"system_message"</span>: <span class="st">"{{planner_system_prompt}}"</span>,
+        <span class="st">"tools"</span>: [],
+        <span class="st">"output_parser"</span>: <span class="st">"json_structured"</span>,
+        <span class="st">"output_schema"</span>: <span class="st">"Plan"</span>
+      }
+    },
+    {
+      <span class="st">"id"</span>: <span class="st">"retriever-web"</span>, <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: {
+        <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+        <span class="st">"system_message"</span>: <span class="st">"{{retriever_system_prompt}}"</span>,
+        <span class="st">"tools"</span>: [<span class="st">"TavilySearchResults"</span>],
+        <span class="st">"output_parser"</span>: <span class="st">"json_structured"</span>,
+        <span class="st">"output_schema"</span>: <span class="st">"RetrievalResult"</span>
+      }
+    },
+    {
+      <span class="st">"id"</span>: <span class="st">"critic-001"</span>, <span class="st">"type"</span>: <span class="st">"LLMChain"</span>,
+      <span class="st">"data"</span>: {
+        <span class="st">"model_name"</span>: <span class="st">"claude-sonnet-4-6"</span>,
+        <span class="st">"system_message"</span>: <span class="st">"{{critic_system_prompt}}"</span>,
+        <span class="st">"output_schema"</span>: <span class="st">"CriticReport"</span>
+      }
+    },
+    {
+      <span class="st">"id"</span>: <span class="st">"router-001"</span>, <span class="st">"type"</span>: <span class="st">"ConditionalRouter"</span>,
+      <span class="st">"data"</span>: {
+        <span class="st">"routes"</span>: [
+          { <span class="st">"condition"</span>: <span class="st">"$.status == 'NO_GAPS'"</span>, <span class="st">"target"</span>: <span class="st">"writer-001"</span> },
+          { <span class="st">"condition"</span>: <span class="st">"$.critic_loops >= 3"</span>,   <span class="st">"target"</span>: <span class="st">"escalate-001"</span> },
+          { <span class="st">"default"</span>: <span class="kw">true</span>,                       <span class="st">"target"</span>: <span class="st">"retriever-web"</span> }
+        ]
+      }
+    }
+  ]
+}</pre>
+
+    <div class="callout callout-green">
+      <strong>Langflow tip.</strong> Export flows to Git as JSON — treat them like code. Pin component versions in <code>langflow.lock</code> so a Langflow upgrade can't silently change a node's behaviour. Use the Langflow API to invoke flows programmatically in your CI eval pipeline.
+    </div>
+
+    <!-- 4.3 N8N -->
+    <h3 id="t-n8n"><a class="anchor" href="#t-n8n">4.3 <span class="tool-badge tb-n8n">● n8n</span> — Workflow Automation Template</a></h3>
+    <p>n8n is ideal when the research squad must integrate with business systems (CRMs, ERPs, email, Slack) — its 500+ native integrations make it the most practical choice for enterprise automation engineers without Python background.</p>
+
+    <table>
+      <thead><tr><th>n8n Node</th><th>Research Squad Role</th><th>Key Config</th></tr></thead>
+      <tbody>
+        <tr><td>AI Agent (LangChain)</td><td>Planner, Retriever, Critic, Writer</td><td>Model: Claude via Anthropic credential · System prompt: from node or external URL</td></tr>
+        <tr><td>HTTP Request</td><td>Retriever → external APIs</td><td>Tavily search, custom REST APIs, Slack webhooks, CRM reads</td></tr>
+        <tr><td>Postgres / MySQL</td><td>Retriever → SQL read</td><td>Read-only credentials; SQL generated by Retriever agent, executed by node</td></tr>
+        <tr><td>Vector Store Tool</td><td>Retriever → KB lookup</td><td>Connect to Pinecone / Supabase pgvector / Weaviate; returns top-K with scores</td></tr>
+        <tr><td>If / Switch</td><td>Critic router</td><td>Condition on <code>{{ $json.critic_report.status }}</code>; routes to Retriever or Writer</td></tr>
+        <tr><td>Loop Over Items</td><td>Feedback loop guard</td><td>Max iterations: 3; tracks <code>critic_loops</code> in workflow static data</td></tr>
+        <tr><td>Wait (Webhook resume)</td><td>HITL gate</td><td>Pauses workflow; sends Slack DM with approve/reject buttons; resumes on callback</td></tr>
+        <tr><td>Send Email / Slack</td><td>Writer output</td><td>Delivers final report; attaches structured JSON + human-readable Markdown</td></tr>
+      </tbody>
+    </table>
+
+    <h4>n8n HITL Gate — Slack Approval Pattern</h4>
+    <pre><span class="cm">// n8n Wait node → Slack Interactive Message → Resume Webhook</span>
+<span class="cm">// Node: "Send HITL Request"</span>
+{
+  <span class="st">"resource"</span>: <span class="st">"message"</span>, <span class="st">"operation"</span>: <span class="st">"post"</span>,
+  <span class="st">"channel"</span>: <span class="st">"#research-approvals"</span>,
+  <span class="st">"blocks"</span>: [
+    { <span class="st">"type"</span>: <span class="st">"section"</span>,
+      <span class="st">"text"</span>: { <span class="st">"type"</span>: <span class="st">"mrkdwn"</span>,
+        <span class="st">"text"</span>: <span class="st">"*Research draft ready for review*\nRun: `{{$json.run_id}}`\nConfidence: {{$json.confidence_score}}\n&lt;{{$json.preview_url}}|View draft&gt;"</span> }
+    },
+    { <span class="st">"type"</span>: <span class="st">"actions"</span>, <span class="st">"elements"</span>: [
+        { <span class="st">"type"</span>: <span class="st">"button"</span>, <span class="st">"text"</span>: { <span class="st">"type"</span>: <span class="st">"plain_text"</span>, <span class="st">"text"</span>: <span class="st">"✓ Approve"</span> },
+          <span class="st">"style"</span>: <span class="st">"primary"</span>, <span class="st">"value"</span>: <span class="st">"approved"</span>,
+          <span class="st">"action_id"</span>: <span class="st">"hitl_approve"</span>, <span class="st">"url"</span>: <span class="st">"{{$json.resume_url}}?decision=approved"</span> },
+        { <span class="st">"type"</span>: <span class="st">"button"</span>, <span class="st">"text"</span>: { <span class="st">"type"</span>: <span class="st">"plain_text"</span>, <span class="st">"text"</span>: <span class="st">"✗ Reject"</span> },
+          <span class="st">"style"</span>: <span class="st">"danger"</span>, <span class="st">"value"</span>: <span class="st">"rejected"</span>,
+          <span class="st">"action_id"</span>: <span class="st">"hitl_reject"</span>, <span class="st">"url"</span>: <span class="st">"{{$json.resume_url}}?decision=rejected"</span> }
+      ]
+    }
+  ]
+}</pre>
+
+    <!-- 4.4 LANGSMITH -->
+    <h3 id="t-langsmith"><a class="anchor" href="#t-langsmith">4.4 <span class="tool-badge tb-ls">◉ LangSmith</span> — Observability & Eval Platform</a></h3>
+    <p>LangSmith is not an orchestrator — it's the observability and evaluation layer that sits on top of every other tool. Every LangGraph, Langflow, and LangChain run auto-traces to LangSmith when the API key is set.</p>
+
+    <table>
+      <thead><tr><th>LangSmith Feature</th><th>Research Squad Usage</th><th>Configuration</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Tracing</strong></td><td>Every node (Planner, Retriever, Critic, Writer) emits a span with inputs, outputs, latency, and token cost</td><td><code>LANGCHAIN_TRACING_V2=true</code> · <code>LANGCHAIN_API_KEY=...</code> env vars</td></tr>
+        <tr><td><strong>Projects</strong></td><td>Separate projects per environment (dev / staging / prod); filter traces by run_id, tag, or agent name</td><td>Set <code>LANGCHAIN_PROJECT=research-squad-prod</code></td></tr>
+        <tr><td><strong>Prompt Hub</strong></td><td>Version-controlled prompt storage; pull pinned versions at runtime — no code changes needed to update prompts</td><td><code>pull("research/planner-v3")</code> in planner_node</td></tr>
+        <tr><td><strong>Datasets & Evals</strong></td><td>Build eval dataset from real traces (flag representative runs); run automated evals on every push</td><td>Label traces → add to dataset → <code>evaluate(app, data=dataset)</code></td></tr>
+        <tr><td><strong>LLM-as-Judge</strong></td><td>Score Critic accuracy, Writer faithfulness, and retrieval recall automatically against rubrics</td><td>Evaluator: <code>LangChainStringEvaluator("criteria")</code> with custom rubric</td></tr>
+        <tr><td><strong>Monitoring dashboards</strong></td><td>Track task-completion rate, critic_loops, cost-per-run, escalation rate — all derived from trace metadata</td><td>Create custom metrics from trace tags; set alert thresholds</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Eval Pipeline — Research Squad in CI</h4>
+    <pre><span class="kw">import</span> langsmith <span class="kw">as</span> ls
+<span class="kw">from</span> langsmith.evaluation <span class="kw">import</span> evaluate, LangChainStringEvaluator
+
+client = ls.<span class="fn">Client</span>()
+
+<span class="cm"># Pull eval dataset (built from labelled production traces)</span>
+dataset = client.<span class="fn">read_dataset</span>(dataset_name=<span class="st">"research-squad-gold-v2"</span>)
+
+<span class="cm"># Faithfulness evaluator — LLM judge scores Writer output</span>
+faithfulness_eval = <span class="fn">LangChainStringEvaluator</span>(
+    <span class="st">"criteria"</span>,
+    config={<span class="st">"criteria"</span>: {
+        <span class="st">"faithfulness"</span>: <span class="st">"Does every claim in the output cite a snippet from the evidence?"</span>,
+        <span class="st">"completeness"</span>: <span class="st">"Are all success_criteria from the plan addressed?"</span>
+    }},
+    client=client
+)
+
+<span class="cm"># Run eval suite against current app version</span>
+results = <span class="fn">evaluate</span>(
+    app.invoke,
+    data=dataset,
+    evaluators=[faithfulness_eval],
+    experiment_prefix=<span class="st">"squad-v2.3-</span><span class="nm">{git_sha}</span><span class="st">"</span>,
+    metadata={<span class="st">"branch"</span>: git_branch, <span class="st">"model"</span>: <span class="st">"claude-sonnet-4-6"</span>}
+)
+
+<span class="cm"># CI gate — fail build if faithfulness drops below threshold</span>
+avg_faith = results.<span class="fn">to_pandas</span>()[<span class="st">"feedback.faithfulness"</span>].<span class="fn">mean</span>()
+<span class="kw">assert</span> avg_faith >= 0.88, <span class="fn">f</span><span class="st">"Faithfulness </span><span class="nm">{avg_faith:.2f}</span><span class="st"> below 0.88 release gate"</span></pre>
+
+    <!-- 4.5 AWS -->
+    <h3 id="t-aws"><a class="anchor" href="#t-aws">4.5 <span class="tool-badge tb-aws">⬡ AWS Stack</span> — Bedrock · Step Functions · Lambda</a></h3>
+    <p>AWS provides a fully managed, enterprise-grade agentic infrastructure without running any servers. The core pattern: LLM calls via Bedrock, orchestration via Step Functions, tools via Lambda, state via DynamoDB, knowledge via Bedrock Knowledge Bases.</p>
+
+    <div class="arch-diagram">
+<span class="cm">── AWS Agentic Research Squad Architecture ────────────────────────────────</span>
+
+<span class="node">[ API Gateway ]</span> ──▶ <span class="node">[ Lambda: Dispatcher ]</span> ──▶ <span class="node">[ Step Functions: Express WF ]</span>
+                                                            │
+                   ┌────────────────────────────────────────┤
+                   │                                        │
+     <span class="node">[ Lambda: Planner ]</span>                    <span class="node">[ Parallel State: Fan-Out ]</span>
+     Bedrock: claude-opus-4                    │
+     Output → <span class="store">[ DynamoDB: plan_id ]</span>    ┌──────┴──────┐
+                                        │             │
+                              <span class="node">[ Lambda: Ret-A ]</span>   <span class="node">[ Lambda: Ret-B ]</span>
+                              Bedrock Haiku       Bedrock Haiku
+                              + KB lookup         + Textract + RDS
+                                        │             │
+                                        └──────┬──────┘
+                                    <span class="node">[ Lambda: Critic ]</span>
+                                    Bedrock Sonnet
+                                    Output → <span class="store">[ DynamoDB ]</span>
+                                               │
+                                    <span class="gate">[ Wait for callback ]</span> ◀── <span class="gate">[ SES/SNS: HITL email ]</span>
+                                               │ (human clicks approve/reject URL)
+                                    <span class="node">[ Lambda: Writer ]</span>
+                                    Bedrock Sonnet
+                                    Output → <span class="store">[ S3: reports/ ]</span>
+
+<span class="label">Observability: CloudWatch Logs + X-Ray traces + CloudWatch Metrics dashboard</span>
+<span class="cm">Cost: ~$0.04–0.18 per research run at typical scale (Haiku for retrieval cuts 60%)</span>
+    </div>
+
+    <h4>Bedrock Knowledge Base — Retriever Lambda</h4>
+    <pre><span class="cm"># Lambda: retriever-a (Python runtime, Bedrock SDK)</span>
+<span class="kw">import</span> boto3, json
+
+bedrock_agent = boto3.<span class="fn">client</span>(<span class="st">"bedrock-agent-runtime"</span>, region_name=<span class="st">"eu-west-1"</span>)
+bedrock_runtime = boto3.<span class="fn">client</span>(<span class="st">"bedrock-runtime"</span>, region_name=<span class="st">"eu-west-1"</span>)
+
+<span class="kw">def</span> <span class="fn">handler</span>(event, context):
+    task = event[<span class="st">"task"</span>]
+    run_id = event[<span class="st">"run_id"</span>]
+
+    <span class="cm"># Step 1: Retrieve from Bedrock Knowledge Base</span>
+    kb_response = bedrock_agent.<span class="fn">retrieve</span>(
+        knowledgeBaseId=<span class="st">"KB-XXXXXXXXXX"</span>,
+        retrievalQuery={<span class="st">"text"</span>: task[<span class="st">"description"</span>]},
+        retrievalConfiguration={
+            <span class="st">"vectorSearchConfiguration"</span>: {
+                <span class="st">"numberOfResults"</span>: 8,
+                <span class="st">"overrideSearchType"</span>: <span class="st">"HYBRID"</span>  <span class="cm"># semantic + keyword</span>
+            }
+        }
+    )
+    snippets = [
+        { <span class="st">"text"</span>: r[<span class="st">"content"</span>][<span class="st">"text"</span>],
+          <span class="st">"citation"</span>: <span class="fn">f</span><span class="st">"[</span><span class="nm">{r['location']['s3Location']['uri']}</span><span class="st"> · score:</span><span class="nm">{r['score']:.2f}</span><span class="st">]"</span>,
+          <span class="st">"confidence"</span>: r[<span class="st">"score"</span>] }
+        <span class="kw">for</span> r <span class="kw">in</span> kb_response[<span class="st">"retrievalResults"</span>]
+    ]
+
+    <span class="cm"># Step 2: Use Retriever LLM to select/filter relevant snippets</span>
+    body = json.<span class="fn">dumps</span>({
+        <span class="st">"anthropic_version"</span>: <span class="st">"bedrock-2023-05-31"</span>, <span class="st">"max_tokens"</span>: 2048,
+        <span class="st">"system"</span>: retriever_system_prompt,
+        <span class="st">"messages"</span>: [{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>:
+            <span class="fn">f</span><span class="st">"Task: </span><span class="nm">{task['description']}</span><span class="st">\n\nSnippets:\n</span><span class="nm">{json.dumps(snippets)}</span><span class="st">"</span>}]
+    })
+    response = bedrock_runtime.<span class="fn">invoke_model</span>(
+        modelId=<span class="st">"anthropic.claude-haiku-4-20251001-v1:0"</span>,
+        body=body, contentType=<span class="st">"application/json"</span>
+    )
+    result = json.<span class="fn">loads</span>(response[<span class="st">"body"</span>].<span class="fn">read</span>())[<span class="st">"content"</span>][0][<span class="st">"text"</span>]
+    <span class="kw">return</span> json.<span class="fn">loads</span>(result)  <span class="cm"># RetrievalResult schema</span></pre>
+
+    <h4>Step Functions — HITL Wait-for-Callback Pattern</h4>
+    <pre><span class="cm">// Step Functions state with waitForTaskToken — pauses until human responds</span>
+{
+  <span class="st">"HumanApprovalGate"</span>: {
+    <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+    <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke.waitForTaskToken"</span>,
+    <span class="st">"Parameters"</span>: {
+      <span class="st">"FunctionName"</span>: <span class="st">"arn:aws:lambda:eu-west-1:ACCT:function:send-hitl-email"</span>,
+      <span class="st">"Payload"</span>: {
+        <span class="st">"taskToken.$"</span>: <span class="st">"$$.Task.Token"</span>,     <span class="cm">// ← resume token</span>
+        <span class="st">"run_id.$"</span>:    <span class="st">"$.run_id"</span>,
+        <span class="st">"preview_url.$"</span>: <span class="st">"$.draft_s3_url"</span>
+      }
+    },
+    <span class="st">"HeartbeatSeconds"</span>: 86400,    <span class="cm">// 24hr timeout → escalate</span>
+    <span class="st">"Catch"</span>: [{ <span class="st">"ErrorEquals"</span>: [<span class="st">"States.HeartbeatTimeout"</span>],
+               <span class="st">"Next"</span>: <span class="st">"EscalateToSecondary"</span> }],
+    <span class="st">"Next"</span>: <span class="st">"RouteHITLDecision"</span>
+  },
+  <span class="st">"RouteHITLDecision"</span>: {
+    <span class="st">"Type"</span>: <span class="st">"Choice"</span>,
+    <span class="st">"Choices"</span>: [
+      { <span class="st">"Variable"</span>: <span class="st">"$.hitl_decision"</span>, <span class="st">"StringEquals"</span>: <span class="st">"approved"</span>, <span class="st">"Next"</span>: <span class="st">"WriterNode"</span> },
+      { <span class="st">"Variable"</span>: <span class="st">"$.hitl_decision"</span>, <span class="st">"StringEquals"</span>: <span class="st">"rejected"</span>, <span class="st">"Next"</span>: <span class="st">"EscalateNode"</span> }
+    ]
+  }
+}</pre>
+  </section>
+
+  <!-- ===== CHAPTER 5 ===== -->
+  <section id="ch5">
+    <h2><a class="anchor" href="#ch5">5. Governance, Safety & Observability Templates</a></h2>
+
+    <!-- 5.1 HITL -->
+    <h3 id="ch5-hitl"><a class="anchor" href="#ch5-hitl">5.1 HITL Gate Templates</a></h3>
+    <p>Human-in-the-loop gates are not optional features — they are mandatory control points for Tier 3–4 actions. Design them at scoping, not as an afterthought.</p>
+
+    <table>
+      <thead><tr><th>Action Type</th><th>HITL Required?</th><th>n8n</th><th>LangGraph</th><th>AWS Step Functions</th></tr></thead>
+      <tbody>
+        <tr><td>Read-only research output (internal)</td><td>No</td><td>Direct output node</td><td>Skip interrupt</td><td>Skip waitForTaskToken</td></tr>
+        <tr><td>Publish external report / email customer</td><td>Yes</td><td>Wait node → Slack/email → Webhook resume</td><td><code>interrupt_before=["hitl"]</code></td><td><code>waitForTaskToken</code> → SES/SNS</td></tr>
+        <tr><td>Write to production database / CRM</td><td>Yes</td><td>Wait node + approval timeout</td><td>interrupt + HITL decision routing</td><td>waitForTaskToken + 24hr heartbeat</td></tr>
+        <tr><td>Financial transaction / procurement</td><td>Yes + dual approval</td><td>Two sequential Wait nodes</td><td>Two interrupt nodes in sequence</td><td>Two waitForTaskToken states in series</td></tr>
+        <tr><td>Regulatory/legal filing</td><td>Yes + audit trail required</td><td>Wait → Slack + log to DB</td><td>interrupt + immutable state snapshot</td><td>waitForTaskToken + CloudTrail + DynamoDB log</td></tr>
+      </tbody>
+    </table>
+
+    <!-- 5.2 OBSERVABILITY -->
+    <h3 id="ch5-obs"><a class="anchor" href="#ch5-obs">5.2 Observability Schema</a></h3>
+    <p>Every agent run must emit a standardized telemetry record. This schema is the minimum for production; extend it per-domain.</p>
+
+    <pre><span class="cm"># Observability record — emitted per agent run (stored in LangSmith + CloudWatch)</span>
+{
+  <span class="st">"run_id"</span>:            <span class="st">"uuid"</span>,           <span class="cm">// propagated as OpenTelemetry trace ID</span>
+  <span class="st">"timestamp_start"</span>:   <span class="st">"ISO8601"</span>,
+  <span class="st">"timestamp_end"</span>:     <span class="st">"ISO8601"</span>,
+  <span class="st">"status"</span>:            <span class="st">"complete|aborted|escalated"</span>,
+  <span class="st">"latency_ms"</span>:        <span class="kw">number</span>,
+  <span class="st">"cost_usd"</span>:          <span class="kw">number</span>,           <span class="cm">// sum of all LLM API costs</span>
+  <span class="st">"token_counts"</span>: {
+    <span class="st">"planner_in"</span>:  <span class="kw">number</span>, <span class="st">"planner_out"</span>:   <span class="kw">number</span>,
+    <span class="st">"retriever_in"</span>:<span class="kw">number</span>, <span class="st">"retriever_out"</span>:  <span class="kw">number</span>,
+    <span class="st">"critic_in"</span>:   <span class="kw">number</span>, <span class="st">"critic_out"</span>:    <span class="kw">number</span>,
+    <span class="st">"writer_in"</span>:   <span class="kw">number</span>, <span class="st">"writer_out"</span>:    <span class="kw">number</span>
+  },
+  <span class="st">"quality_metrics"</span>: {
+    <span class="st">"retrieval_recall"</span>:  <span class="kw">number</span>,          <span class="cm">// 0–1, measured post-run</span>
+    <span class="st">"faithfulness"</span>:      <span class="kw">number</span>,          <span class="cm">// 0–1, LLM-as-judge score</span>
+    <span class="st">"critic_loops"</span>:      <span class="kw">number</span>,          <span class="cm">// leading indicator for quality issues</span>
+    <span class="st">"confidence_floor"</span>:  <span class="kw">number</span>           <span class="cm">// min snippet confidence in final output</span>
+  },
+  <span class="st">"governance"</span>: {
+    <span class="st">"hitl_triggered"</span>:   <span class="kw">boolean</span>,
+    <span class="st">"hitl_decision"</span>:    <span class="st">"approved|rejected|timeout|null"</span>,
+    <span class="st">"hitl_approver"</span>:    <span class="st">"user_id|null"</span>,
+    <span class="st">"data_sources"</span>:     <span class="st">"string[]"</span>,       <span class="cm">// all sources accessed (audit lineage)</span>
+    <span class="st">"pii_accessed"</span>:     <span class="kw">boolean</span>,
+    <span class="st">"policy_version"</span>:   <span class="st">"string"</span>         <span class="cm">// prompt + tool registry version</span>
+  }
+}</pre>
+
+    <!-- 5.3 CHECKLIST -->
+    <h3 id="ch5-checklist"><a class="anchor" href="#ch5-checklist">5.3 Architecture Quality Checklist</a></h3>
+    <p>Embed this into your CI pipeline or architecture review template. Every item maps to a known failure mode.</p>
+    <ul class="checklist">
+      <li><strong>State schema is typed and versioned.</strong> All agents read/write a single typed state object. Schema is committed to Git alongside the graph.</li>
+      <li><strong>Every tool has a JSON schema.</strong> The orchestrator validates tool inputs against the schema before execution. Invalid inputs raise a typed error, not a runtime exception.</li>
+      <li><strong>Read and write tools are separate objects.</strong> Retriever agents cannot access write tools. Write tools require explicit approval node preceding them.</li>
+      <li><strong>Feedback loops have hard max-iteration guards.</strong> Critic → Retriever loops abort at N iterations (default: 3) and escalate rather than looping forever.</li>
+      <li><strong>HITL gates are hardcoded, not optional.</strong> <code>interrupt_before</code> / <code>waitForTaskToken</code> / Wait nodes are in the graph definition, not in the prompt.</li>
+      <li><strong>Prompts are version-controlled and pinned at deploy.</strong> LangSmith Hub pull with explicit version tag, or Git SHA reference. No "latest" in production.</li>
+      <li><strong>State checkpoints persist to durable storage.</strong> PostgresSaver / DynamoDB / Redis — not in-memory. Long-running runs survive Lambda timeouts and restarts.</li>
+      <li><strong>Eval dataset exists before go-live.</strong> Minimum 50 graded scenarios from real or representative inputs, including adversarial cases. Release gate ≥ 85% task completion.</li>
+      <li><strong>Observability records emitted per run.</strong> LangSmith trace + CloudWatch metric per run. Escalation rate, cost-per-run, and critic_loops on a live dashboard.</li>
+      <li><strong>Canary deploy with rollback trigger defined.</strong> 5% traffic first; pre-committed rollback if task-completion drops below threshold or cost-per-run exceeds ceiling.</li>
+      <li><strong>Model provider failover configured.</strong> Priority-ordered fallback: Anthropic → OpenAI → open-weight via Bedrock. Tested and eval-validated before production.</li>
+      <li><strong>Audit trail captures reasoning, not just outputs.</strong> Every Critic decision logs the issue list. Every Writer output logs the snippet IDs used. Retained ≥ 90 days.</li>
+    </ul>
+  </section>
+
+  <!-- ===== APPENDIX A ===== -->
+  <section id="appendix-a">
+    <h2><a class="anchor" href="#appendix-a">Appendix A — Pattern Decision Matrix</a></h2>
+    <table>
+      <thead><tr><th>Pattern</th><th>Use when</th><th>Avoid when</th><th>Best tool fit</th><th>Key guard</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Sequential Pipeline</td>
+          <td>Fixed SOPs, compliance checks, weekly reports</td>
+          <td>Many exception paths; high parallelism needed</td>
+          <td>n8n, Langflow, Step Functions linear chain</td>
+          <td>Explicit error nodes; HITL before external publish</td>
+        </tr>
+        <tr>
+          <td>Concurrent Fan-Out</td>
+          <td>Multiple independent data sources; latency matters</td>
+          <td>Workers have shared dependencies; cheap to run sequentially</td>
+          <td>LangGraph Send API; Step Functions Parallel state; n8n Split + Merge</td>
+          <td>Deterministic aggregator node; citation deduplication</td>
+        </tr>
+        <tr>
+          <td>Feedback Loop</td>
+          <td>High-stakes accuracy; self-correcting quality</td>
+          <td>Low-stakes tasks; latency-sensitive paths</td>
+          <td>LangGraph conditional edges; n8n Loop Over Items</td>
+          <td>max_iterations = 3; budget ceiling per run</td>
+        </tr>
+        <tr>
+          <td>Orchestrator-Worker</td>
+          <td>Dynamic task routing; support triage; queries that reveal sub-tasks mid-run</td>
+          <td>Predetermined path known in advance; context window cost matters</td>
+          <td>LangGraph create_react_agent; n8n AI Agent with sub-workflow tools</td>
+          <td>Max tool-call ceiling (10); Orchestrator must not hold full evidence in context</td>
+        </tr>
+        <tr>
+          <td>Hierarchical Tree</td>
+          <td>50+ agent tasks; multi-domain enterprise reviews; multi-jurisdiction analysis</td>
+          <td>Simple tasks; adds unnecessary latency/cost; single domain</td>
+          <td>Step Functions nested state machines; LangGraph sub-graphs</td>
+          <td>Pass citation IDs upward (not full text); shared evidence store per run</td>
+        </tr>
+        <tr>
+          <td>Blackboard / Mesh</td>
+          <td>Exploratory research; market scanning; emergent coordination; R&amp;D ideation</td>
+          <td>Compliance-heavy; determinism required; regulated outputs</td>
+          <td>LangGraph shared state + event router; n8n webhook pub/sub</td>
+          <td>Hard event-count ceiling (20); TTL per run (30 min); mandatory HITL before writes; LangSmith tracing required</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===== APPENDIX B ===== -->
+  <section id="appendix-b">
+    <h2><a class="anchor" href="#appendix-b">Appendix B — Model Selection Guide</a></h2>
+    <table>
+      <thead><tr><th>Agent Role</th><th>Recommended Model</th><th>Bedrock Model ID</th><th>Rationale</th><th>Cost signal</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Planner</td>
+          <td>Claude Opus 4 / GPT-4o</td>
+          <td><code>anthropic.claude-opus-4-20250514-v1:0</code></td>
+          <td>Complex multi-step reasoning; DAG quality determines entire run quality</td>
+          <td>~1 call per run; cost is low despite frontier pricing</td>
+        </tr>
+        <tr>
+          <td>Retriever</td>
+          <td>Claude Haiku 4 / GPT-4o mini</td>
+          <td><code>anthropic.claude-haiku-4-20251001-v1:0</code></td>
+          <td>Mechanical extraction and filtering; speed matters; called N× per run</td>
+          <td>Biggest lever — accounts for 60–80% of total token cost</td>
+        </tr>
+        <tr>
+          <td>Critic</td>
+          <td>Claude Sonnet 4.6 / GPT-4o</td>
+          <td><code>anthropic.claude-sonnet-4-6-20261001-v1:0</code></td>
+          <td>Needs strong reasoning but not full frontier; may run multiple times per loop</td>
+          <td>Second-largest cost; use extended thinking for high-stakes evals</td>
+        </tr>
+        <tr>
+          <td>Writer</td>
+          <td>Claude Sonnet 4.6</td>
+          <td><code>anthropic.claude-sonnet-4-6-20261001-v1:0</code></td>
+          <td>Structured synthesis from approved evidence; tone and format matter</td>
+          <td>1 call per run; output quality most visible to end user</td>
+        </tr>
+        <tr>
+          <td>LLM-as-Judge (eval)</td>
+          <td>Claude Opus 4</td>
+          <td><code>anthropic.claude-opus-4-20250514-v1:0</code></td>
+          <td>Judge accuracy matters; using a weaker model than the system under eval creates bias</td>
+          <td>Offline eval only — not in production path</td>
+        </tr>
+        <tr>
+          <td>Context Compressor</td>
+          <td>Claude Haiku 4</td>
+          <td><code>anthropic.claude-haiku-4-20251001-v1:0</code></td>
+          <td>Summarises prior turns before passing to planning step; pure cost optimization</td>
+          <td>Reduces planner input tokens by 40–55%</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===== APPENDIX C ===== -->
+  <section id="appendix-c">
+    <h2><a class="anchor" href="#appendix-c">Appendix C — Cost Control Patterns</a></h2>
+    <table>
+      <thead><tr><th>Pattern</th><th>Mechanism</th><th>Typical saving</th><th>Implementation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Per-step model routing</td>
+          <td>Haiku for Retrievers; frontier only for Planner + Writer</td>
+          <td>50–65% vs. all-frontier</td>
+          <td>Separate LangGraph nodes with different model bindings; conditional routing by task type</td>
+        </tr>
+        <tr>
+          <td>Context compression</td>
+          <td>Haiku summarises prior agent turns before passing to next step</td>
+          <td>40–55% input tokens</td>
+          <td>Compressor node between Retriever and Critic; JSON state instead of raw conversation</td>
+        </tr>
+        <tr>
+          <td>Retrieval precision first</td>
+          <td>Better chunking + reranking reduces snippets sent to Critic/Writer</td>
+          <td>20–35% token cost</td>
+          <td>Hybrid search in Bedrock KB; reranker model (Cohere Rerank via Bedrock); top-K=5 not 20</td>
+        </tr>
+        <tr>
+          <td>Prompt caching</td>
+          <td>Cache static system prompts; pay only for incremental tokens</td>
+          <td>60–90% on cached portion</td>
+          <td>Anthropic prompt caching API; LangGraph node-level cache; LangSmith cache layer</td>
+        </tr>
+        <tr>
+          <td>Budget ceiling per run</td>
+          <td>Abort workflow if accumulated cost exceeds threshold mid-run</td>
+          <td>Prevents runaway loops</td>
+          <td>Track cost in shared state; conditional edge aborts if <code>cost_usd > budget_ceiling</code></td>
+        </tr>
+        <tr>
+          <td>Simple-query router</td>
+          <td>Single-turn questions bypass multi-agent graph entirely</td>
+          <td>80–95% for FAQ-class queries</td>
+          <td>Classifier at API Gateway / n8n entry: if simple → Haiku direct; if complex → full graph</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-dark">
+      <strong>Cost baseline to track.</strong> Instrument <code>cost_usd</code> per run from day one via LangSmith metadata or CloudWatch custom metrics. Without a baseline, cost drift is invisible until it's a budget incident. Target: ≤ $0.15/research run at Haiku-dominant routing; ≤ $0.40 at Sonnet-dominant.
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ── Sidebar active state ────────────────────────────────────────────────
+const sidebarLinks = document.querySelectorAll('#sidebar-nav a');
+const sections = [];
+document.querySelectorAll('section[id], h3[id]').forEach(el => sections.push(el));
+
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      sidebarLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-15% 0px -70% 0px' });
+
+sections.forEach(s => obs.observe(s));
+
+// ── Tab panel switching ─────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const group = btn.closest('.tool-tabs');
+    group.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    group.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    group.querySelector('#' + btn.dataset.panel).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

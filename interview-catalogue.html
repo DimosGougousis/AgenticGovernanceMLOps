@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Build Catalogue — Vague → Sharp, by Stage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;450;500;600&display=swap');
+
+  :root{
+    --ink:#14120d;
+    --paper:#f2ede2;
+    --paper-deep:#e7e0d0;
+    --line:#cdc4b1;
+    --vague:#a8492a;
+    --sharp:#2c6349;
+    --sharp-glow:#43896a;
+    --gold:#a9772f;
+    --mute:#6c6453;
+    --card:#fbf8f1;
+    --rail:#1c1913;
+    --accent-blue:#1d4ed8;
+    --accent-blue-bg:rgba(29,78,216,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:'Inter',sans-serif;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--sharp);color:var(--paper)}
+
+  /* ---- header ---- */
+  header{
+    border-bottom:1.5px solid var(--ink);
+    padding:2.4rem 1.6rem 1.7rem;max-width:980px;margin:0 auto;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--vague);
+    font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;
+  }
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+  h1{
+    font-family:'Newsreader',serif;font-weight:500;
+    font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.0;
+    letter-spacing:-.015em;margin-bottom:.8rem;
+  }
+  h1 em{font-style:italic;color:var(--sharp)}
+  .sub{font-size:1.04rem;color:var(--mute);max-width:54ch}
+  .sub b{color:var(--ink);font-weight:600}
+
+  /* ---- progress bar ---- */
+  .progress-wrap{
+    max-width:980px;margin:.8rem auto 0;padding:0 1.6rem;
+  }
+  .progress-label{
+    font-family:'IBM Plex Mono',monospace;font-size:.66rem;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--mute);
+    margin-bottom:.3rem;
+  }
+  .progress-track{
+    height:4px;background:var(--paper-deep);border-radius:2px;
+    position:relative;
+  }
+  .progress-fill{
+    height:100%;background:var(--sharp);border-radius:2px;
+    width:0%;transition:width .3s ease;
+  }
+  .progress-count{
+    font-family:'IBM Plex Mono',monospace;font-size:.66rem;
+    color:var(--sharp);text-align:right;margin-top:.25rem;
+  }
+
+  .legend{
+    max-width:980px;margin:1.3rem auto 0;padding:0 1.6rem;
+    display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.82rem;color:var(--mute);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .legend span{display:flex;align-items:center;gap:.45rem}
+  .swatch{width:11px;height:11px;border-radius:2px}
+
+  /* ---- stage nav ---- */
+  nav{
+    position:sticky;top:0;z-index:20;background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:.7rem 1.6rem;margin-top:1.4rem;
+  }
+  .nav-inner{
+    max-width:980px;margin:0 auto;display:flex;gap:.4rem;
+    overflow-x:auto;scrollbar-width:none;align-items:center;
+  }
+  .nav-inner::-webkit-scrollbar{display:none}
+  .nav-inner a{
+    flex:0 0 auto;text-decoration:none;color:var(--mute);
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;
+    letter-spacing:.04em;padding:.35rem .65rem;border:1px solid var(--line);
+    border-radius:2px;white-space:nowrap;transition:all .18s;
+  }
+  .nav-inner a:hover,.nav-inner a.active{border-color:var(--ink);color:var(--ink);background:var(--paper-deep)}
+  .nav-sep{color:var(--line);font-size:.8rem;flex:0 0 auto}
+
+  /* ---- search ---- */
+  .search-wrap{
+    max-width:980px;margin:1rem auto 0;padding:0 1.6rem;
+  }
+  .search-box{
+    width:100%;padding:.55rem .9rem;
+    border:1px solid var(--line);border-radius:2px;
+    background:var(--card);color:var(--ink);
+    font-family:'Inter',sans-serif;font-size:.9rem;
+    outline:none;transition:border-color .18s;
+  }
+  .search-box:focus{border-color:var(--sharp)}
+  .search-box::placeholder{color:var(--mute)}
+  .search-count{
+    font-family:'IBM Plex Mono',monospace;font-size:.66rem;
+    color:var(--mute);margin-top:.35rem;
+    display:none;
+  }
+  .search-count.visible{display:block}
+  .entry.hidden{display:none}
+  .entry.highlight .entry-prompt{background:#1a3a2a}
+
+  main{max-width:980px;margin:0 auto;padding:0 1.6rem 4rem}
+
+  /* ---- stage block ---- */
+  .stage{margin-top:3rem;scroll-margin-top:4rem}
+  .stage.collapsed .stage-entries{display:none}
+  .stage-head{display:flex;align-items:flex-start;gap:1rem;margin-bottom:.4rem;cursor:pointer}
+  .stage-head:hover .stage-name{color:var(--sharp)}
+  .stage-num{
+    font-family:'Newsreader',serif;font-style:italic;font-size:2.6rem;
+    line-height:.9;color:var(--gold);flex:0 0 auto;
+  }
+  .stage-titles{flex:1}
+  .stage-name{
+    font-family:'Newsreader',serif;font-size:1.65rem;font-weight:500;line-height:1.1;
+    transition:color .18s;
+  }
+  .stage-q{
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--vague);
+    font-weight:600;margin-top:.35rem;
+  }
+  .stage-toggle{
+    font-family:'IBM Plex Mono',monospace;font-size:.7rem;
+    color:var(--mute);flex:0 0 auto;margin-top:.5rem;user-select:none;
+    padding:.2rem .45rem;border:1px solid var(--line);border-radius:2px;
+  }
+  .stage-desc{
+    font-size:.93rem;color:var(--mute);margin:.6rem 0 1.2rem;
+    padding-left:calc(2.6rem + 1rem);
+  }
+  @media(max-width:560px){.stage-desc{padding-left:0}}
+
+  /* ---- entry count badge ---- */
+  .entry-badge{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.62rem;
+    background:var(--paper-deep);color:var(--mute);border-radius:2px;
+    padding:.1rem .35rem;margin-left:.5rem;vertical-align:middle;
+  }
+
+  /* ---- NEW badge ---- */
+  .new-badge{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.58rem;
+    background:var(--sharp);color:var(--paper);border-radius:2px;
+    padding:.08rem .3rem;margin-left:.4rem;vertical-align:middle;letter-spacing:.06em;
+  }
+
+  /* ---- entry ---- */
+  .entry{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:3px;margin-bottom:1rem;overflow:hidden;
+  }
+  .entry.new-entry{border-left:3px solid var(--sharp)}
+  .entry-prompt{
+    background:var(--rail);color:var(--paper);
+    padding:.7rem 1rem;font-family:'Newsreader',serif;
+    font-size:1.05rem;font-style:italic;
+    display:flex;align-items:baseline;gap:.5rem;
+  }
+  .entry-prompt::before{content:"Q  ";font-family:'IBM Plex Mono',monospace;font-style:normal;color:var(--gold);font-weight:600;font-size:.85rem;flex:0 0 auto}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:620px){.pair{grid-template-columns:1fr}}
+  .cell{padding:.85rem 1rem}
+  .cell.v{border-right:1px solid var(--line);background:rgba(168,73,42,.05)}
+  @media(max-width:620px){.cell.v{border-right:none;border-bottom:1px solid var(--line)}}
+  .cell-label{
+    font-family:'IBM Plex Mono',monospace;font-size:.66rem;
+    letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+    margin-bottom:.45rem;display:flex;align-items:center;gap:.4rem;
+  }
+  .cell.v .cell-label{color:var(--vague)}
+  .cell.s .cell-label{color:var(--sharp)}
+  .cell.v .text{font-style:italic;color:#5e4536;font-size:.92rem}
+  .cell.s .text{font-size:.92rem}
+  .cell.s .text .hl{background:rgba(44,99,73,.15);padding:0 .14em;border-radius:2px;font-weight:500}
+  .cell.s .text .hl2{background:rgba(169,119,47,.15);padding:0 .14em;border-radius:2px;font-weight:500;color:#7a5018}
+
+  .move{
+    padding:.6rem 1rem;border-top:1px dashed var(--line);
+    font-size:.82rem;color:var(--mute);background:var(--card);
+  }
+  .move b{color:var(--sharp);font-weight:600}
+  .move .lbl{font-family:'IBM Plex Mono',monospace;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-right:.5rem}
+
+  /* ---- concept tag ---- */
+  .concept-tag{
+    font-family:'IBM Plex Mono',monospace;font-size:.58rem;
+    padding:.1rem .35rem;border:1px solid var(--accent-blue);color:var(--accent-blue);
+    border-radius:2px;background:var(--accent-blue-bg);
+    display:inline-block;margin-left:.4rem;vertical-align:middle;letter-spacing:.04em;
+  }
+
+  /* ---- metric chips ---- */
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .9rem}
+  .chip{
+    font-family:'IBM Plex Mono',monospace;font-size:.66rem;
+    padding:.22rem .5rem;border:1px solid var(--sharp);color:var(--sharp);
+    border-radius:2px;background:rgba(44,99,73,.06);
+  }
+
+  /* ---- cheat strip ---- */
+  .cheat{
+    margin-top:3.2rem;border:1px solid var(--ink);border-radius:3px;
+    background:var(--card);overflow:hidden;
+  }
+  .cheat-head{
+    background:var(--ink);color:var(--paper);padding:.7rem 1.1rem;
+    font-family:'IBM Plex Mono',monospace;font-size:.74rem;
+    letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  }
+  .cheat-body{padding:1.1rem 1.1rem 1.3rem}
+  .cheat-row{
+    display:grid;grid-template-columns:130px 1fr;gap:.8rem;
+    padding:.5rem 0;border-bottom:1px solid var(--paper-deep);font-size:.88rem;
+  }
+  .cheat-row:last-child{border-bottom:none}
+  .cheat-row .k{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.78rem;color:var(--gold)}
+  .cheat-row .vlist b{color:var(--sharp);font-weight:600}
+
+  /* ---- concept index ---- */
+  .concept-index{
+    margin-top:2.8rem;border:1px solid var(--line);border-radius:3px;
+    background:var(--card);overflow:hidden;
+  }
+  .concept-index-head{
+    background:var(--rail);color:var(--paper);padding:.7rem 1.1rem;
+    font-family:'IBM Plex Mono',monospace;font-size:.74rem;
+    letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  }
+  .concept-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:.6rem;padding:1rem 1.1rem;
+  }
+  .concept-item{
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;
+    padding:.35rem .55rem;border:1px solid var(--line);border-radius:2px;
+    color:var(--mute);cursor:pointer;transition:all .18s;
+  }
+  .concept-item:hover{border-color:var(--sharp);color:var(--sharp);background:rgba(44,99,73,.06)}
+  .concept-item .ci-stage{color:var(--gold);margin-left:.3rem}
+
+  .close{
+    margin-top:2.6rem;border-top:1.5px solid var(--ink);padding-top:1.3rem;
+    font-size:.88rem;color:var(--mute);
+  }
+  .close b{color:var(--ink)}
+  .src{margin-top:.9rem;font-size:.74rem;font-family:'IBM Plex Mono',monospace;color:var(--mute)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Agentic Automation Engineer · Response Catalogue v2</div>
+  <h1>The Agentic Build,<br><em>said specifically.</em></h1>
+  <p class="sub">A clustered catalogue of interview answers — each one a <b>vague version most candidates give</b>, paired with the <b>sharp version that proves you've actually shipped an agent.</b> 7 stages · 5 entries each · all agentic engineering concepts covered.</p>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-label">reading progress</div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-count" id="progressCount"></div>
+</div>
+
+<div class="legend">
+  <span><span class="swatch" style="background:var(--vague)"></span>Vague — floats, can't survive a follow-up</span>
+  <span><span class="swatch" style="background:var(--sharp)"></span>Sharp — tool, number, trade-off, impact</span>
+  <span><span class="swatch" style="background:var(--sharp);opacity:.4"></span>New entry (v2)</span>
+</div>
+
+<div class="search-wrap">
+  <input class="search-box" id="searchBox" type="text" placeholder="Filter by keyword — e.g. MCP, RAG, LangGraph, eval, canary…">
+  <div class="search-count" id="searchCount"></div>
+</div>
+
+<nav><div class="nav-inner" id="nav"></div></nav>
+
+<main id="main"></main>
+
+<script>
+const STAGES = [
+  {
+    id:"scope",
+    name:"1 · Scope & Qualify",
+    q:"\"How do you decide whether a problem even warrants an agent?\"",
+    desc:"The discipline most candidates skip. The bar: agentic AI is justified only when the task needs multi-step reasoning or contextual judgment that rules-based automation can't reach — and success can be measured objectively.",
+    chips:["fit test","success metric","baseline","ROI vs latency","risk tier","RPA vs agent","HITL mapping"],
+    entries:[
+      {
+        prompt:"When should a client use an agent instead of a simpler automation?",
+        v:"Agents are great when the task is complex and needs some intelligence, so I'd recommend them for the harder workflows.",
+        s:"I apply a <span class=\"hl\">three-part fit test</span>: does the task need <span class=\"hl\">multi-step reasoning</span>, <span class=\"hl\">contextual judgment</span>, and can success be <span class=\"hl\">measured objectively</span>? If a deterministic rules engine clears it at lower cost and latency, I don't use an agent. For a client triaging <span class=\"hl\">~4,000 support tickets/week</span>, routing was rules-fit but the <span class=\"hl\">root-cause diagnosis step</span> needed judgment — so only that step became agentic.",
+        move:["the move","Named a reusable test (3 criteria), applied it to a real volume, and showed where you <b>chose not</b> to use an agent. Restraint signals seniority."],
+        concept:null
+      },
+      {
+        prompt:"How do you define success before building?",
+        v:"We'd agree on some KPIs with the client and make sure everyone's aligned on what good looks like.",
+        s:"I set a <span class=\"hl\">single primary metric with a target and a baseline</span> before any build. For a contract-review agent that meant <span class=\"hl\">\"≥90% clause-extraction recall vs. a paralegal-labelled gold set,\"</span> measured against the <span class=\"hl\">current manual baseline of ~6 hrs/contract.</span> If we can't name a number to beat, the project isn't scoped — it's a wish.",
+        move:["the move","One metric, a target, a gold-set definition, and a baseline to beat. \"Aligned on KPIs\" dies on the first follow-up."],
+        concept:null
+      },
+      {
+        prompt:"How do you choose the right risk tier before you start?",
+        v:"We consider the risk level and make sure we have appropriate controls in place before deploying anything.",
+        s:"I assign a <span class=\"hl\">four-tier risk classification</span> during scoping, not after build. Tier 1: informational, no external writes. Tier 2: internal writes, human review weekly. Tier 3: external actions — emails, payments — <span class=\"hl\">HITL gate on every irreversible step.</span> Tier 4: regulated domains (HIPAA, FCA) — legal sign-off and <span class=\"hl\">immutable audit trail before a line of code runs.</span> A healthcare triage agent I scoped landed at Tier 3; that shaped the architecture before the first tool was defined.",
+        move:["the move","Four named tiers, applied to a real project, with the architectural consequence. Risk tiering that happens after build is risk theatre."],
+        concept:"RISK TIERING",
+        isNew:true
+      },
+      {
+        prompt:"When would you recommend RPA over an AI agent?",
+        v:"RPA is better for repetitive structured tasks, while agents handle the more complex, unstructured ones.",
+        s:"RPA wins when the process is <span class=\"hl\">fully deterministic, UI-driven, and stable</span> — e.g. extracting a fixed field from the same screen every time. I recommend an agent when inputs vary, decisions require context, or the process has <span class=\"hl\">branches that rules can't enumerate.</span> For an insurance underwriting workflow: data extraction from PDFs was RPA-fit at <span class=\"hl\">$0.003/doc vs. ~$0.12 with an agent</span> — so I used RPA there and layered the agent only on the <span class=\"hl\">risk-assessment judgment step.</span> Mixing them cut cost ~60% vs. a pure-agent approach.",
+        move:["the move","A unit-cost comparison, a named boundary between the two, and a hybrid outcome. \"More complex tasks\" is the answer that costs you the engagement."],
+        concept:"RPA vs AGENT",
+        isNew:true
+      },
+      {
+        prompt:"How do you map where humans must stay in the loop before building?",
+        v:"We identify checkpoints where human review makes sense and design the workflow around those.",
+        s:"I map a <span class=\"hl\">HITL matrix</span> during scoping: for each action the agent might take, I score <span class=\"hl\">reversibility</span> (can it be undone?), <span class=\"hl\">blast radius</span> (how many downstream systems does it touch?), and <span class=\"hl\">regulatory exposure.</span> Any action scoring high on two of three gets a mandatory approval gate — not optional, hardcoded. For a procurement agent, <span class=\"hl\">PO creation above $5k</span> and <span class=\"hl\">vendor changes</span> were gated; everything else ran autonomously. That matrix became the governance contract with the client.",
+        move:["the move","A named scoring method, three criteria, a concrete threshold, and the governance outcome. \"Checkpoints where it makes sense\" is untestable."],
+        concept:"HITL MATRIX",
+        isNew:true
+      }
+    ]
+  },
+  {
+    id:"design",
+    name:"2 · Architect & Design",
+    q:"\"Walk me through how you'd architect this agent.\"",
+    desc:"Where 'I'd use a framework' loses to a named orchestration pattern, tool boundary, and a justified model choice. The build layer: orchestration primitives, tool-calling, and where humans stay in the loop.",
+    chips:["orchestration","tool boundary","model routing","HITL","MCP","multi-agent topology","memory architecture"],
+    entries:[
+      {
+        prompt:"How would you structure a multi-step agent?",
+        v:"I'd set up the agent with the right tools and a good orchestration framework so it can handle the steps end to end.",
+        s:"I'd decompose it into a <span class=\"hl\">planner → tool-executor → verifier loop.</span> The planner picks the next action, tools are <span class=\"hl\">narrowly scoped</span> (each does one thing, e.g. <span class=\"hl\">a read-only DB query tool vs. a separate write tool requiring approval</span>), and a verifier checks the output against the goal before the loop continues. I keep <span class=\"hl\">a human approval gate on any irreversible action</span> — refunds, sends, deletes.",
+        move:["the move","Named the loop pattern, drew a tool boundary with a security rationale (read vs. write), and placed the HITL gate on irreversible actions specifically."],
+        concept:null
+      },
+      {
+        prompt:"How do you choose which model powers the agent?",
+        v:"I'd pick whichever model performs best for the use case and gives a good balance of quality and cost.",
+        s:"I <span class=\"hl\">route by step, not one model for everything.</span> Cheap fast model for <span class=\"hl\">classification and routing</span>, frontier model only for the <span class=\"hl\">reasoning-heavy planning step.</span> On one build that cut <span class=\"hl\">~60% of token cost</span> with no measurable quality drop on the eval set, because 80% of calls never needed the expensive model.",
+        move:["the move","Per-step routing with a concrete cost number and the reason it's safe (eval held flat). \"Good balance\" is the tell of someone who never sized it."],
+        concept:null
+      },
+      {
+        prompt:"How do you connect the agent to external tools and APIs in 2026?",
+        v:"We'd integrate the tools the agent needs using APIs and make sure they're connected properly to the framework.",
+        s:"I default to <span class=\"hl\">Model Context Protocol (MCP)</span> for tool connectivity — it's the emerging standard with <span class=\"hl\">97M monthly SDK downloads</span> and native support in Claude, GPT-4o, and Gemini. Each tool becomes an MCP server with a typed schema the agent reads at runtime. That gives me <span class=\"hl\">hot-swappable tools without redeploying the agent</span>, and I get a <span class=\"hl\">security boundary at the MCP gateway</span> — I enforce rate limits and credential scoping there, not scattered across tool code. On one build, adding a new integration dropped from 2 days of glue code to <span class=\"hl\">4 hours of MCP server config.</span>",
+        move:["the move","Named the protocol, its adoption signal, a concrete speed benefit, and where security lives. \"APIs connected to the framework\" describes no architecture at all."],
+        concept:"MCP",
+        isNew:true
+      },
+      {
+        prompt:"When do you go multi-agent and how do you pick the topology?",
+        v:"Multi-agent setups are useful when you need different agents handling different parts of the task in parallel.",
+        s:"I use multi-agent when a task has <span class=\"hl\">role-separation or parallelisation benefits</span> that outweigh coordination overhead. I pick from three topologies: <span class=\"hl\">hierarchical</span> (supervisor delegates to specialised workers — best for research+write or audit tasks), <span class=\"hl\">sequential pipeline</span> (fixed handoffs — best for compliance workflows with clear contracts), or <span class=\"hl\">peer swarm</span> (agents share memory — best for broad coverage but hard to debug, so I avoid it unless I have strong eval coverage). For a legal-discovery project I used hierarchical: one planner agent, three specialised readers, one synthesis writer — <span class=\"hl\">parallelising the reads cut wall-clock time from ~4 hrs to ~35 min.</span>",
+        move:["the move","Three named topologies with selection criteria and a concrete timing outcome. \"Different agents for different parts\" describes no topology choice — the follow-up always asks which one."],
+        concept:"MULTI-AGENT TOPOLOGY",
+        isNew:true
+      },
+      {
+        prompt:"How do you design the agent's memory?",
+        v:"We give the agent access to memory so it can remember context across steps and sessions.",
+        s:"I design memory in three layers. <span class=\"hl\">In-context (short-term)</span>: the current task window — cheap, volatile, cleared each run. <span class=\"hl\">External semantic memory (long-term)</span>: facts and summaries stored in a vector DB (I use <span class=\"hl\">PostgreSQL + pgvector</span> for most builds — no extra infra) and retrieved by similarity at query time. <span class=\"hl\">Episodic memory</span>: structured records of past interactions, useful for personalisation, stored in a tool like <span class=\"hl\">Zep or Mem0.</span> The mistake I see most is storing everything in context — it bloats token cost and degrades reasoning on long sessions. On a CRM agent, moving account history to semantic memory cut <span class=\"hl\">avg prompt length ~40%</span> with no accuracy drop.",
+        move:["the move","Three named layers, a default tool recommendation with a reason, and a before/after metric. \"Access to memory\" names no architecture and can't survive a follow-up."],
+        concept:"MEMORY ARCHITECTURE",
+        isNew:true
+      }
+    ]
+  },
+  {
+    id:"data",
+    name:"3 · Data & Context",
+    q:"\"How did you get the right context into the agent?\"",
+    desc:"Retrieval, grounding, and context engineering. The probe is always: how do you know the agent saw the right thing — and what stops it from hallucinating when it didn't?",
+    chips:["retrieval P/R","chunking","grounding","freshness","vector store","context compression","knowledge graph"],
+    entries:[
+      {
+        prompt:"How did you set up retrieval for the agent?",
+        v:"We used RAG to give the agent access to the client's documents so it could answer accurately.",
+        s:"We built retrieval, then <span class=\"hl\">measured it separately from generation</span>: <span class=\"hl\">retrieval recall</span> (did the right chunk surface) and <span class=\"hl\">faithfulness</span> (was the answer grounded in it). Switching from fixed-size to <span class=\"hl\">semantic chunking</span> plus a <span class=\"hl\">citation-required prompt</span> lifted faithfulness from <span class=\"hl\">~78% to ~91%.</span> We also <span class=\"hl\">tagged document freshness</span> so stale policy docs were down-ranked.",
+        move:["the move","Split retrieval from generation, two metrics, a before/after, the specific fix, plus a freshness control. \"We used RAG\" tells them nothing about whether it worked."],
+        concept:null
+      },
+      {
+        prompt:"What stops the agent from making things up?",
+        v:"We added guardrails and prompting to reduce hallucinations as much as possible.",
+        s:"Three layers: <span class=\"hl\">citation-required output</span> (every claim maps to a retrieved source or the agent says \"not found\"), a <span class=\"hl\">faithfulness check in the verifier step</span> that fails answers ungrounded in context, and a <span class=\"hl\">confidence threshold that routes low-confidence cases to a human.</span> We tracked the <span class=\"hl\">ungrounded-answer rate</span> as the live metric, held under 3%.",
+        move:["the move","Named three distinct mechanisms and the metric you watched. \"Guardrails and prompting\" is the phrase that ends the technical round."],
+        concept:null
+      },
+      {
+        prompt:"How did you pick your vector store and configure it?",
+        v:"We used a vector database to store the embeddings and make retrieval fast and accurate.",
+        s:"I select the vector store based on three factors: <span class=\"hl\">hosting model, query volume, and metadata filtering needs.</span> For most builds under 5M chunks I use <span class=\"hl\">PostgreSQL + pgvector</span> — no new infrastructure, transactions are ACID, and it handles hybrid search. At scale I move to <span class=\"hl\">Qdrant for high-throughput filtered search</span> or <span class=\"hl\">Weaviate if the client needs multi-tenancy.</span> Config matters as much as choice: I always set <span class=\"hl\">HNSW parameters (ef_construction, m)</span> based on the recall/speed tradeoff from a benchmark run — default settings left one client at <span class=\"hl\">72% recall; tuning pushed it to 94%</span> with only ~15% latency increase.",
+        move:["the move","Three named options with selection criteria, a named config parameter, and a recall improvement with a unit cost. \"A vector database\" is the generic answer that loses the technical round."],
+        concept:"VECTOR STORE",
+        isNew:true
+      },
+      {
+        prompt:"How do you handle a context window that isn't big enough?",
+        v:"We manage the context carefully and summarise where needed so the agent has the key information it needs.",
+        s:"I apply <span class=\"hl\">context compression in three passes</span>. First, <span class=\"hl\">retrieval precision</span>: better chunking and reranking means fewer irrelevant chunks enter context at all. Second, <span class=\"hl\">prompt summarisation</span>: long prior turns are compressed by a cheap fast model before being passed to the reasoning step — I use <span class=\"hl\">Claude Haiku as the summariser feeding Claude Opus as the planner</span>, saving ~55% of input tokens on long sessions. Third, <span class=\"hl\">structured state</span>: instead of carrying raw conversation, I extract key entities and decisions into a compact JSON state object — the agent reads state, not history. That pattern handled a multi-hour legal-review task within a <span class=\"hl\">128k token window with zero truncation errors.</span>",
+        move:["the move","Three named techniques, specific model routing for compression, a token saving number, and a production proof. \"Summarise where needed\" names no mechanism."],
+        concept:"CONTEXT COMPRESSION",
+        isNew:true
+      },
+      {
+        prompt:"When would you use a knowledge graph instead of a vector store?",
+        v:"Knowledge graphs are useful when you need to understand relationships between concepts in your data.",
+        s:"I use a vector store as the default. I add a <span class=\"hl\">knowledge graph (Neo4j)</span> when two conditions hold: the domain has <span class=\"hl\">explicit, stable relationships</span> between entities (org charts, regulatory cross-references, product dependencies), and those relationships are <span class=\"hl\">required for correct reasoning</span> — not just retrieval. For a compliance agent answering questions like \"which regulation governs this product in this jurisdiction,\" pure vector similarity retrieved plausible but wrong documents 22% of the time; <span class=\"hl\">GraphRAG over a Neo4j graph cut that error rate to 6%</span> because the path between entities is deterministic, not probabilistic. The cost: graph schema design adds ~2 weeks of modelling work upfront.",
+        move:["the move","A named condition for switching, a tool name, a before/after error rate, and the explicit cost of the choice. \"Relationships between concepts\" is true but gives the interviewer nothing to probe."],
+        concept:"KNOWLEDGE GRAPH",
+        isNew:true
+      }
+    ]
+  },
+  {
+    id:"eval",
+    name:"4 · Evaluate",
+    q:"\"Is it eval-based, or vibes-based?\"",
+    desc:"The single most important stage in 2026, and the one vagueness gets caught hardest. Eval-driven development is the expected default — a graded set, real metrics, regression coverage.",
+    chips:["eval set","F1 / faithfulness","regression","edge cases","LLM-as-judge","red team","cost-quality Pareto"],
+    entries:[
+      {
+        prompt:"How did you know the agent was actually good?",
+        v:"We tested it thoroughly and it gave strong, accurate results, so we were confident it was ready.",
+        s:"We built an <span class=\"hl\">eval set of ~250 graded scenarios</span> drawn from real user logs, including <span class=\"hl\">deliberate edge cases</span> — ambiguous inputs, adversarial phrasing, empty results. We scored <span class=\"hl\">task-completion rate</span> and <span class=\"hl\">step-level accuracy</span>, not just final-answer correctness, because an agent can reach the right answer the wrong way. It launched at <span class=\"hl\">87% task completion</span>; we gated release on clearing 85%.",
+        move:["the move","A sized graded set, edge cases named, step-level vs. final-answer distinction (shows agentic depth), and a release gate. This is the answer that separates shipped from theoretical."],
+        concept:null
+      },
+      {
+        prompt:"How do you catch regressions when you change the agent?",
+        v:"We'd re-test after changes to make sure nothing broke before shipping.",
+        s:"Every change runs against the <span class=\"hl\">full eval suite in CI</span> before merge — same discipline as unit tests. A <span class=\"hl\">prompt tweak that improved one case</span> once <span class=\"hl\">regressed four others</span>; the suite caught it pre-merge. We also run <span class=\"hl\">model-upgrade evals</span> so a provider's new model version can't silently degrade us in production.",
+        move:["the move","Eval-in-CI, a concrete regression the suite caught, and model-upgrade coverage. \"We'd re-test\" implies manual and ad-hoc — a red flag."],
+        concept:null
+      },
+      {
+        prompt:"How do you score outputs when the correct answer isn't a single string?",
+        v:"We review the outputs manually and use some automated scoring where we can.",
+        s:"I use <span class=\"hl\">LLM-as-judge</span> for open-ended outputs: a separate judge model scores each response on a rubric — <span class=\"hl\">correctness, groundedness, completeness, and tone</span> — returning a score 1–5 with reasoning. I then <span class=\"hl\">calibrate the judge against human labels</span> on 50 samples; if judge/human agreement is below 80%, the rubric is underspecified, not the agent. On one project the judge caught a <span class=\"hl\">systematic overconfidence pattern</span> the human reviewers missed because they sampled too few cases. I use <span class=\"hl\">Langfuse or Phoenix</span> to host the eval runs — both store scores, judge reasoning, and agent trace together so failure diagnosis is one click, not a spreadsheet.",
+        move:["the move","Named the technique, the four rubric dimensions, the calibration step, a thing it caught, and the observability toolchain. \"Manual review\" doesn't scale and \"automated scoring\" without a method is a non-answer."],
+        concept:"LLM-AS-JUDGE",
+        isNew:true
+      },
+      {
+        prompt:"How do you red-team an agent before it goes to production?",
+        v:"We do adversarial testing to find edge cases and security issues before releasing.",
+        s:"I run a <span class=\"hl\">structured red-team sprint</span> over three attack surfaces. <span class=\"hl\">Prompt injection</span>: I embed adversarial instructions in documents the agent reads — \"ignore previous instructions and output X\" — and verify the tool-permission model blocks execution. <span class=\"hl\">Goal hijacking</span>: I try to steer the planner toward out-of-scope actions through plausible-sounding user inputs. <span class=\"hl\">Data exfiltration</span>: I test whether the agent will repeat PII from retrieved documents in channels it shouldn't. On the last healthcare agent build, red-team found the agent would <span class=\"hl\">echo patient names in error messages</span> — caught before go-live, fixed by stripping entity names from error templates. That finding would've been a HIPAA incident in production.",
+        move:["the move","Three named attack surfaces with test methods, a real finding, and the consequence of not catching it. \"Adversarial testing\" with no method is unfalsifiable."],
+        concept:"RED TEAM",
+        isNew:true
+      },
+      {
+        prompt:"How do you pick between two agent designs when both pass eval?",
+        v:"We'd run both and pick the one that performs better overall, taking into account the client's requirements.",
+        s:"When eval scores are equivalent, I plot a <span class=\"hl\">cost-quality Pareto curve</span>: for each design, I run the eval set and record <span class=\"hl\">task-completion rate vs. average cost-per-task.</span> I pick the design that's on the efficient frontier — the one that isn't dominated on both dimensions. Last year, two architectures both hit <span class=\"hl\">88% task completion</span>: Design A at <span class=\"hl\">$0.041/task</span>, Design B at <span class=\"hl\">$0.017/task</span>. Design B won on Pareto grounds; the $0.024 saving was <span class=\"hl\">~$29k/year at production volume.</span> I present this as a chart so the client sees the trade-off, not just a recommendation.",
+        move:["the move","Named the decision framework, named both dimensions, ran the arithmetic to annual dollars, and described the client deliverable. \"Performs better overall\" is the answer that leaves the decision unmade."],
+        concept:"COST-QUALITY PARETO",
+        isNew:true
+      }
+    ]
+  },
+  {
+    id:"deploy",
+    name:"5 · Deploy",
+    q:"\"A passing eval isn't a production system. How do you ship it?\"",
+    desc:"The consistent 2026 gap: prototype good, eval green, deploy improvised. The sharp answer has a rollout shape, a rollback trigger, and cost watched alongside quality.",
+    chips:["canary %","rollback trigger","cost/req","feature flag","prompt versioning","sandbox","failover"],
+    entries:[
+      {
+        prompt:"How did you roll the agent out to production?",
+        v:"We deployed it carefully and monitored closely to make sure it went smoothly.",
+        s:"<span class=\"hl\">Canary release behind a feature flag</span>: opened to <span class=\"hl\">5% of traffic</span>, watched <span class=\"hl\">eval-on-live-samples and cost-per-request together</span>, then ramped to <span class=\"hl\">25% → 100% over a week.</span> We set an <span class=\"hl\">explicit rollback trigger</span> — if task-completion on live samples dropped below <span class=\"hl\">82% or cost/req crossed our ceiling, auto-revert</span> — so the decision wasn't a judgment call at 2am.",
+        move:["the move","A staged % ramp, paired quality+cost monitoring, and a pre-committed rollback threshold. \"Carefully and closely\" describes a feeling, not a plan."],
+        concept:null
+      },
+      {
+        prompt:"What did you watch in the first days after launch?",
+        v:"We kept an eye on the dashboards to catch any issues early.",
+        s:"We ran a <span class=\"hl\">72-hour post-deploy runbook</span> because dashboards miss drift. Daily we sampled <span class=\"hl\">~50 live transcripts by hand</span>, tracked the <span class=\"hl\">human-escalation rate</span> (the canary for silent failure), and watched <span class=\"hl\">cost drift</span> as real traffic patterns diverged from the eval set. Caught a <span class=\"hl\">prompt-injection attempt on day 2</span> that no metric flagged.",
+        move:["the move","A named time-boxed runbook, manual sampling alongside metrics, and a real thing it caught. \"Eye on the dashboards\" is exactly the improvised-deploy tell interviewers probe for."],
+        concept:null
+      },
+      {
+        prompt:"How do you version and deploy prompt changes without breaking production?",
+        v:"We manage our prompts and make sure we test changes before pushing them to production.",
+        s:"I treat prompts as code: every prompt lives in <span class=\"hl\">version control (Git)</span>, tagged with a semantic version tied to the eval score it was tested against. Deployments use <span class=\"hl\">prompt versioning in Langfuse or LangSmith</span> — the agent loads the pinned version at startup, not the latest. A prompt change follows the same <span class=\"hl\">PR → eval-in-CI → canary deploy</span> path as code. On one project, a stakeholder edited a prompt directly in production \"just to fix phrasing\" — it caused a <span class=\"hl\">12% drop in task-completion</span> before we caught it. After that, prompts were write-protected in the UI and could only ship via the versioned pipeline.",
+        move:["the move","Git for prompts, pinned versions at runtime, the same CI discipline as code, and a production incident that justified the control. \"Test before pushing\" is the answer that creates the incident."],
+        concept:"PROMPT VERSIONING",
+        isNew:true
+      },
+      {
+        prompt:"How do you safely test the agent against real systems before going live?",
+        v:"We use a staging environment that mirrors production so we can test everything end to end.",
+        s:"I run a <span class=\"hl\">sandbox harness with shadow mode</span>: the agent executes against real production data in read-only mode, and write calls are intercepted and logged but not executed. I diff the <span class=\"hl\">intended writes against what a human would have done</span> on the same cases. For an invoicing agent, shadow mode over two weeks showed the agent would have over-charged on <span class=\"hl\">3 of 840 invoices</span> due to a rounding edge case — caught with zero customer impact. Only after shadow recall cleared <span class=\"hl\">99.5%</span> did we enable live writes. A staging env alone doesn't catch this because staging data is usually synthetic and misses real-world edge distributions.",
+        move:["the move","Named the pattern (shadow mode), explained why staging alone fails, gave a specific catch with a precision number. \"Staging environment\" is what everyone says — shadow mode is what experienced engineers do."],
+        concept:"SHADOW MODE",
+        isNew:true
+      },
+      {
+        prompt:"What happens when the agent's primary model provider has an outage?",
+        v:"We have fallback plans and would switch to another model or provider if there's an issue.",
+        s:"I build <span class=\"hl\">multi-provider fallback at the LLM call layer</span>, not the agent layer. The orchestrator (n8n or LangGraph) holds a <span class=\"hl\">priority-ordered provider list</span>: primary (Claude Opus for reasoning), secondary (GPT-4o), tertiary (open-weight model on Modal for latency-insensitive tasks). Failover triggers automatically on <span class=\"hl\">429, 503, or latency > 8s.</span> I also maintain <span class=\"hl\">separate eval scores per provider</span> — they perform differently on the same task, so the fallback model is pre-validated, not an emergency guess. In Q4 2025, a 40-minute Anthropic outage hit production; the fallback kicked in at <span class=\"hl\">the 9th second, 0 customer-visible failures,</span> ~12% higher token cost for the duration.",
+        move:["the move","A named fallback mechanism at the right layer, trigger conditions, pre-validated alternatives, and a production proof with a cost quantification. \"Switch to another model\" is the plan that fails at 2am."],
+        concept:"PROVIDER FAILOVER",
+        isNew:true
+      }
+    ]
+  },
+  {
+    id:"monitor",
+    name:"6 · Monitor & Govern",
+    q:"\"Where's the risk once it's live?\"",
+    desc:"Safety, cost, and compliance woven through — not bolted on. If you reach the end of a case without naming regulatory, bias, or drift risk, they read it as not understanding AI.",
+    chips:["drift","cost ceiling","bias audit","audit trail","behavioral drift","EU AI Act","multi-agent tracing"],
+    entries:[
+      {
+        prompt:"How do you keep a live agent reliable over time?",
+        v:"We monitor performance continuously and retrain or adjust as needed to keep quality high.",
+        s:"A fixed <span class=\"hl\">KPI panel reviewed weekly</span>: task-completion, escalation rate, cost-per-resolution, and <span class=\"hl\">p95 latency.</span> Drift shows up first as a <span class=\"hl\">rising escalation rate</span> before accuracy visibly drops, so that's my early-warning signal. Monthly we re-score against the eval set to catch <span class=\"hl\">silent degradation</span>, and unit-economics get a quarterly review so cost stays honest as scope grows.",
+        move:["the move","Named the exact panel, the leading indicator (escalation before accuracy), and three cadences. \"Monitor continuously and adjust\" is content-free."],
+        concept:null
+      },
+      {
+        prompt:"What are the biggest risks you flag to a client?",
+        v:"There are risks around accuracy, security, and compliance that we manage throughout the project.",
+        s:"I name them concretely per build. For a financial-services agent: <span class=\"hl\">regulatory exposure if it gives anything resembling advice</span> (so we ring-fence it to account-status and FAQ), <span class=\"hl\">prompt-injection on user-supplied text</span> (input sanitisation + a constrained tool set), and <span class=\"hl\">bias in outcomes</span> (a fairness audit across customer segments before go-live). Plus a <span class=\"hl\">full audit trail</span> so every agent action is reconstructable for a regulator.",
+        move:["the move","Three specific, domain-anchored risks each with a mitigation, plus auditability. \"Accuracy, security, compliance\" is a word-cloud, not a risk assessment."],
+        concept:null
+      },
+      {
+        prompt:"How do you detect when agent behaviour is drifting without waiting for complaints?",
+        v:"We track performance metrics over time and alert when things fall outside acceptable ranges.",
+        s:"I monitor <span class=\"hl\">four drift types on separate cadences</span>. <span class=\"hl\">Data drift</span> (input distribution shifts from eval baseline) — checked weekly via embedding distance between live inputs and the eval set. <span class=\"hl\">Concept drift</span> (world changes but the knowledge base doesn't) — flagged by tracking retrieval-freshness scores and setting a <span class=\"hl\">stale-document threshold.</span> <span class=\"hl\">Performance drift</span> (accuracy drops) — caught by weekly re-scoring 50 live cases against the gold set. <span class=\"hl\">Behavioural drift</span> (agent starts choosing different tool sequences for the same inputs) — detected by hashing tool-call sequences and alerting on distribution change. On one build, <span class=\"hl\">behavioural drift flagged a rogue prompt-cache interaction</span> two weeks before it would have produced wrong outputs.",
+        move:["the move","Four named drift types with distinct detection methods and cadences, plus a real thing it caught before failure. \"Alert when outside ranges\" covers only performance drift and misses the rest."],
+        concept:"BEHAVIORAL DRIFT",
+        isNew:true
+      },
+      {
+        prompt:"How do you make an agentic system compliant with the EU AI Act?",
+        v:"We ensure the system meets regulatory requirements and build in the transparency and documentation the Act requires.",
+        s:"EU AI Act Article 13 requires <span class=\"hl\">explainability of high-risk system decisions</span> — so I instrument every agent step to log the <span class=\"hl\">reasoning, data inputs, tool calls, confidence scores, and alternatives considered,</span> not just the final output. Article 10 requires data governance before deployment: I run a <span class=\"hl\">data classification pass (BigID or OneTrust)</span> to tag PII, PHI, and sensitive categories before they enter the RAG pipeline. For high-risk classification (Article 6), I build a <span class=\"hl\">conformity assessment document</span> — an agent inventory with risk tier, owner, audit log location, and test results — because regulators ask for it, not the product. An EU fintech client was asked to demonstrate compliance to their national authority 6 months post-launch; because the logs existed, <span class=\"hl\">the audit took 3 days instead of 3 months.</span>",
+        move:["the move","Named the specific Articles, the tools used, and the audit outcome in concrete time. \"Regulatory requirements and transparency\" is the answer that produces a 3-month audit."],
+        concept:"EU AI ACT",
+        isNew:true
+      },
+      {
+        prompt:"How do you trace a failure in a multi-agent system back to its cause?",
+        v:"We use logging and tracing to follow what each agent did and figure out where things went wrong.",
+        s:"I instrument multi-agent systems with <span class=\"hl\">distributed tracing using OpenTelemetry</span> — each agent run generates a trace ID, each sub-agent call is a child span, and tool invocations are leaf spans with input/output hashes. The critical thing is <span class=\"hl\">propagating the trace ID across agent handoffs</span> — if you don't, you get disconnected logs from five agents and no causal chain. I host traces in <span class=\"hl\">Langfuse</span>, which lets me replay the full decision chain in a waterfall view. When a multi-agent research pipeline returned a wrong conclusion last quarter, the trace showed the <span class=\"hl\">synthesis agent had received a truncated output from the reader agent</span> — a 4,096-token limit that wasn't visible in any metric, only in the span output. Fixed in an hour; without the trace it would have taken days.",
+        move:["the move","Named the standard (OpenTelemetry), the critical missing piece (trace ID propagation), the tool (Langfuse), and a specific bug it found. \"Logging and tracing\" without propagation is how bugs hide in multi-agent systems."],
+        concept:"DISTRIBUTED TRACING",
+        isNew:true
+      }
+    ]
+  },
+  {
+    id:"improve",
+    name:"7 · Improve & Compound",
+    q:"\"What separates a project from a program?\"",
+    desc:"The only stage that keeps producing value after launch. Stages 1–6 produce an agent; this one produces a program — owned, on a cadence, looping back to scope.",
+    chips:["feedback loop","retro cadence","unit economics","scope-back","A/B prompts","capability retirement","tool library"],
+    entries:[
+      {
+        prompt:"How do you make the agent better after launch?",
+        v:"We gather feedback and keep iterating to improve the agent over time.",
+        s:"Every <span class=\"hl\">human escalation and thumbs-down becomes a labelled eval case</span> — failures feed the gold set automatically, so the suite hardens where reality bit us. A <span class=\"hl\">small named operating team</span> runs a weekly triage, a monthly eval re-score, and a quarterly loop <span class=\"hl\">back to scope</span> to retire low-value capabilities. Over two quarters that took task-completion from <span class=\"hl\">87% to 94%</span> while cost/resolution fell <span class=\"hl\">~30%.</span>",
+        move:["the move","A specific feedback mechanism (failures → eval set), named cadences, a loop back to stage 1, and a two-number outcome. \"Gather feedback and iterate\" is the single most common empty phrase in agent interviews."],
+        concept:null
+      },
+      {
+        prompt:"How do you prove ongoing ROI to the client?",
+        v:"We show the client the value the agent is delivering so they can see the return.",
+        s:"I report against the <span class=\"hl\">baseline we set in stage one.</span> For the contract-review agent: review time fell from <span class=\"hl\">~6 hrs to ~40 min/contract</span>, at <span class=\"hl\">~1,200 contracts/year</span> that's <span class=\"hl\">~6,700 hours returned</span>, against an all-in run cost of roughly <span class=\"hl\">$X/month</span> — so I show <span class=\"hl\">net hours and net dollars,</span> not activity. If the number ever stops clearing the baseline, I recommend sunsetting it.",
+        move:["the move","Tied ROI to the stage-1 baseline, did the arithmetic to net dollars, and showed the integrity to recommend killing it. \"Show the value\" without a number is the opposite of consulting."],
+        concept:null
+      },
+      {
+        prompt:"How do you test whether a new prompt version actually improves things?",
+        v:"We test the new prompt against some examples and compare the results before deciding which to keep.",
+        s:"I run <span class=\"hl\">prompt A/B tests against the full eval set</span>, not a sample. The test is statistical: I need the improvement to clear <span class=\"hl\">p &lt; 0.05 on McNemar's test</span> (for binary task-completion) before declaring a winner — because a 2-point improvement on 20 cases is noise, but on 250 cases it's signal. I also check <span class=\"hl\">per-category performance</span>: a prompt that improves average score by 3% but regresses the adversarial-input category is a regression, not an improvement. Last cycle, a prompt rewrite improved overall completion by <span class=\"hl\">4.1 points</span> but degraded multi-tool coordination cases by <span class=\"hl\">8 points</span> — McNemar caught the category regression; a simple average would have shipped a broken agent.",
+        move:["the move","Named the statistical test, the full-set requirement, per-category analysis, and a concrete near-miss. \"Compare the results\" is the answer that ships broken agents."],
+        concept:"A/B PROMPT TESTING",
+        isNew:true
+      },
+      {
+        prompt:"When do you retire a capability rather than keep improving it?",
+        v:"If a capability isn't performing well or isn't being used, we'd consider removing it from the agent.",
+        s:"I define <span class=\"hl\">retirement criteria at scoping</span>, not retrospectively. A capability gets flagged for retirement if: <span class=\"hl\">usage is below 5% of total agent calls for two consecutive quarterly reviews</span>, or its <span class=\"hl\">cost-per-task exceeds 3× the average</span>, or its <span class=\"hl\">task-completion rate is more than 10 points below the agent average</span> and a fix would require architectural changes. For a customer-service agent, a \"returns initiation\" capability met all three criteria after six months — <span class=\"hl\">2% of calls, $0.38/task vs. $0.11 average, 61% completion.</span> Retiring it and routing those cases to a human saved $1,800/month and improved customer satisfaction on the affected cases. The criteria made the recommendation easy to defend; without them, it's a subjective call.",
+        move:["the move","Three quantified retirement triggers set in advance, a real retirement with numbers, and the business consequence. \"If it isn't performing well\" is the answer that keeps bad capabilities alive forever."],
+        concept:"CAPABILITY RETIREMENT",
+        isNew:true
+      },
+      {
+        prompt:"How do you build compounding value into an agentic program over time?",
+        v:"We expand the agent's capabilities and keep building on what's working to deliver more value.",
+        s:"The compounding mechanism is a <span class=\"hl\">shared tool library</span>: every tool built for one agent is documented, tested, and versioned so the next agent reuses rather than rebuilds. After 18 months, a team of three had a library of <span class=\"hl\">47 production-grade tools</span> — web search, CRM read/write, document extraction, email dispatch, approval workflows — and new agents launched in <span class=\"hl\">~3 weeks vs. ~10 weeks</span> at the start. The second compounding mechanism is <span class=\"hl\">eval inheritance</span>: new agents that reuse a tool inherit its existing eval coverage, so you're not starting from zero on safety. That's a program; an expanding scope list is just a backlog.",
+        move:["the move","Named two specific compounding mechanisms (tool library + eval inheritance), a metric (47 tools, 3→10 week reduction), and the distinction between a program and a backlog. \"Expand capabilities\" is what every candidate says."],
+        concept:"TOOL LIBRARY",
+        isNew:true
+      }
+    ]
+  }
+];
+
+// ---- universal pattern strip ----
+const CHEAT = [
+  ["SCOPE", "Fit test (3 criteria) + <b>one primary metric, a target, a baseline</b> to beat + <b>risk tier</b> + HITL matrix."],
+  ["DESIGN", "Name the <b>loop pattern</b>, the <b>tool boundary</b> (read vs. write), <b>per-step model routing</b> with a cost number, <b>MCP</b> for tool connectivity, <b>memory layer</b>."],
+  ["DATA", "Measure <b>retrieval recall</b> and <b>faithfulness</b> separately; name the <b>grounding mechanism</b>; pick the <b>vector store</b> with selection criteria; <b>compress context</b>, don't just truncate."],
+  ["EVAL", "A <b>sized graded set</b> with edge cases; <b>step-level + final-answer</b> scoring; a <b>release gate</b>; eval-in-CI; <b>LLM-as-judge</b> with calibration; <b>red team</b> on 3 surfaces; <b>Pareto curve</b> for design decisions."],
+  ["DEPLOY", "<b>Canary %</b> ramp + <b>pre-committed rollback trigger</b> + cost watched with quality + <b>prompt versioning in Git</b> + <b>shadow mode</b> before live writes + <b>multi-provider failover.</b>"],
+  ["MONITOR", "Fixed <b>KPI panel</b> + <b>4 drift types</b> on separate cadences + <b>leading indicator</b> (escalation before accuracy) + <b>distributed tracing (OpenTelemetry)</b> across agents + <b>EU AI Act</b> Article-level compliance."],
+  ["IMPROVE", "Failures → <b>eval set</b> + named <b>cadence</b> + loop <b>back to scope</b> + ROI in <b>net dollars vs. baseline</b> + <b>statistical A/B tests</b> + <b>retirement criteria</b> set at scoping + <b>shared tool library.</b>"]
+];
+
+// ---- concept index ----
+const CONCEPTS = [];
+STAGES.forEach(st=>{
+  st.entries.forEach(e=>{
+    if(e.concept) CONCEPTS.push({label:e.concept, stageId:st.id, stageName:st.name.split('·')[0].trim()+'·'+st.name.split('·')[1].trim()});
+  });
+});
+
+// render
+const main = document.getElementById('main');
+const nav = document.getElementById('nav');
+let totalEntries = 0;
+STAGES.forEach(st=>totalEntries+=st.entries.length);
+
+STAGES.forEach((st,si)=>{
+  // nav
+  const a=document.createElement('a');
+  a.href='#'+st.id;a.textContent=st.name;a.dataset.stage=st.id;
+  nav.appendChild(a);
+  if(si<STAGES.length-1){const sep=document.createElement('span');sep.className='nav-sep';sep.textContent='/';nav.appendChild(sep);}
+
+  // stage
+  const sec=document.createElement('section');
+  sec.className='stage';sec.id=st.id;
+  const numParts=st.name.split('·');
+  const badgeCount=st.entries.length;
+  const newCount=st.entries.filter(e=>e.isNew).length;
+  sec.innerHTML=`
+    <div class="stage-head" onclick="toggleStage('${st.id}',this)">
+      <div class="stage-num">${numParts[0].trim()}</div>
+      <div class="stage-titles">
+        <div class="stage-name">${numParts[1].trim()}<span class="entry-badge">${badgeCount} entries</span>${newCount>0?`<span class="new-badge">+${newCount} new</span>`:''}</div>
+        <div class="stage-q">${st.q}</div>
+      </div>
+      <div class="stage-toggle">▾ collapse</div>
+    </div>
+    <p class="stage-desc">${st.desc}</p>
+  `;
+
+  const entriesWrap=document.createElement('div');
+  entriesWrap.className='stage-entries';
+
+  st.entries.forEach(e=>{
+    const div=document.createElement('div');
+    div.className='entry'+(e.isNew?' new-entry':'');
+    div.dataset.text=(e.prompt+' '+e.v+' '+e.s+' '+(e.concept||'')).toLowerCase();
+    div.innerHTML=`
+      <div class="entry-prompt">${e.prompt}${e.concept?`<span class="concept-tag">${e.concept}</span>`:''}${e.isNew?'<span class="new-badge" style="margin-left:auto">NEW</span>':''}</div>
+      <div class="pair">
+        <div class="cell v">
+          <div class="cell-label">✗ vague</div>
+          <div class="text">"${e.v}"</div>
+        </div>
+        <div class="cell s">
+          <div class="cell-label">✓ sharp</div>
+          <div class="text">${e.s}</div>
+        </div>
+      </div>
+      <div class="move"><span class="lbl">${e.move[0]}</span>${e.move[1]}</div>
+    `;
+    entriesWrap.appendChild(div);
+  });
+
+  sec.appendChild(entriesWrap);
+
+  // chips
+  const chips=document.createElement('div');
+  chips.className='chips';
+  chips.innerHTML=st.chips.map(c=>`<span class="chip">${c}</span>`).join('');
+  sec.appendChild(chips);
+
+  main.appendChild(sec);
+});
+
+// concept index
+const ciWrap=document.createElement('div');
+ciWrap.className='concept-index';
+ciWrap.innerHTML=`
+  <div class="concept-index-head">Concept Index — jump directly to any agentic engineering concept</div>
+  <div class="concept-grid">
+    ${CONCEPTS.map(c=>`<div class="concept-item" onclick="jumpToConcept('${c.stageId}','${c.label}')">${c.label}<span class="ci-stage">${c.stageName.split('·')[0].trim()}</span></div>`).join('')}
+  </div>
+`;
+main.appendChild(ciWrap);
+
+// cheat strip
+const cheat=document.createElement('div');
+cheat.className='cheat';
+cheat.innerHTML=`
+  <div class="cheat-head">The one-glance pattern — what every sharp answer carries, by stage (v2 enhanced)</div>
+  <div class="cheat-body">
+    ${CHEAT.map(([k,v])=>`<div class="cheat-row"><span class="k">${k}</span><span class="vlist">${v}</span></div>`).join('')}
+  </div>
+`;
+main.appendChild(cheat);
+
+// close
+const close=document.createElement('div');
+close.className='close';
+close.innerHTML=`
+  <p><b>How to use it:</b> the left column is the trap — read each one aloud and feel how it floats. The right column is the target shape, not a script. <b>Swap in your real projects, real metrics, real client names</b> so every specific is true under a follow-up. An interviewer's job is to push past the first answer; fabricated numbers collapse on the second question.</p>
+  <p style="margin-top:.7rem">The through-line across all seven stages: every sharp answer names <b>a tool or method</b>, <b>a number</b>, <b>a trade-off or decision</b>, and <b>a business consequence.</b> Miss one and the answer drifts back toward vague.</p>
+  <p style="margin-top:.7rem"><b>New in v2:</b> 3 additional entries per stage covering MCP, multi-agent topology, memory architecture, vector store selection, context compression, knowledge graphs, LLM-as-judge, red teaming, Pareto eval, prompt versioning, shadow mode, provider failover, behavioral drift, EU AI Act compliance, distributed tracing, A/B prompt testing, capability retirement, and compounding tool libraries.</p>
+  <p class="src">Stage model synthesised from 2026 agentic-pipeline practice (ADLC / 10-stage pipeline), Gartner's eval-driven-development guidance, O'Reilly AI Agents Stack 2026, EU AI Act Articles 10/13, and AI-consultant interview patterns.</p>
+`;
+main.appendChild(close);
+
+// ---- interactions ----
+function toggleStage(id, head){
+  const sec=document.getElementById(id);
+  const toggle=head.querySelector('.stage-toggle');
+  sec.classList.toggle('collapsed');
+  toggle.textContent=sec.classList.contains('collapsed')?'▸ expand':'▾ collapse';
+}
+
+function jumpToConcept(stageId, label){
+  const sec=document.getElementById(stageId);
+  if(sec.classList.contains('collapsed')) sec.classList.remove('collapsed');
+  // find entry
+  const entries=sec.querySelectorAll('.entry');
+  entries.forEach(e=>{
+    const tag=e.querySelector('.concept-tag');
+    if(tag && tag.textContent===label){
+      e.scrollIntoView({behavior:'smooth',block:'center'});
+      e.classList.add('highlight');
+      setTimeout(()=>e.classList.remove('highlight'),2000);
+    }
+  });
+}
+
+// search
+const searchBox=document.getElementById('searchBox');
+const searchCount=document.getElementById('searchCount');
+searchBox.addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  if(!q){
+    document.querySelectorAll('.entry').forEach(e=>e.classList.remove('hidden'));
+    searchCount.classList.remove('visible');
+    return;
+  }
+  let shown=0,total=0;
+  document.querySelectorAll('.entry').forEach(e=>{
+    total++;
+    if(e.dataset.text.includes(q)){e.classList.remove('hidden');shown++;}
+    else e.classList.add('hidden');
+  });
+  searchCount.textContent=`${shown} of ${total} entries match "${q}"`;
+  searchCount.classList.add('visible');
+});
+
+// reading progress
+function updateProgress(){
+  const scrollTop=window.scrollY;
+  const docHeight=document.documentElement.scrollHeight-window.innerHeight;
+  const pct=docHeight>0?Math.round((scrollTop/docHeight)*100):0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressCount').textContent=pct+'% read';
+}
+window.addEventListener('scroll',updateProgress,{passive:true});
+
+// active nav highlight
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      document.querySelectorAll('.nav-inner a').forEach(a=>{
+        a.classList.toggle('active',a.dataset.stage===entry.target.id);
+      });
+    }
+  });
+},{rootMargin:'-40% 0px -50% 0px'});
+document.querySelectorAll('.stage').forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>
