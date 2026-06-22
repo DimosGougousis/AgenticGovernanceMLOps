@@ -150,6 +150,8 @@
     <a class="toc-indent" href="#p-fanout">3.2 Concurrent Fan-Out</a>
     <a class="toc-indent" href="#p-feedback">3.3 Feedback Loop</a>
     <a class="toc-indent" href="#p-hierarchical">3.4 Hierarchical Tree</a>
+    <a class="toc-indent" href="#p-orchestrator">3.5 Orchestrator-Worker</a>
+    <a class="toc-indent" href="#p-blackboard">3.6 Blackboard / Mesh</a>
 
     <div class="toc-section-title">Tool Implementation</div>
     <a href="#ch4">4. Tool-by-Tool Templates</a>
@@ -524,169 +526,898 @@ evidence package and a target format. Write ONLY from the evidence provided.
   <!-- ===== CHAPTER 3 ===== -->
   <section id="ch3">
     <h2><a class="anchor" href="#ch3">3. Orchestration Pattern Templates</a></h2>
-    <p>The same four agents produce different systems depending on how they are wired together. Choose the simplest pattern that satisfies your reliability and latency requirements, then add complexity only where needed.</p>
+    <p>The same four agents produce entirely different systems depending on how they are wired together. Each pattern below is a self-contained design: it includes the flow diagram (showing all paths — happy, error, and guard), three concrete business use cases, and implementation snippets across LangGraph, n8n, Langflow, and AWS.</p>
 
-    <!-- 3.1 SEQUENTIAL -->
-    <h3 id="p-sequential"><a class="anchor" href="#p-sequential">3.1 Sequential Pipeline</a></h3>
-    <p><strong>When:</strong> fixed, repeatable workflows with compliance requirements (compliance checks, onboarding, weekly reports). Each step has a contract: one input, one typed output, one responsibility.</p>
-    <div class="arch-diagram">
-<span class="node">[ PLANNER ]</span> ──▶ <span class="node">[ RETRIEVER ]</span> ──▶ <span class="node">[ CRITIC ]</span> ──▶ <span class="gate">[ HITL? ]</span> ──▶ <span class="node">[ WRITER ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
-
-Each arrow = a typed state transition. No branching. No loops.
-Audit trail: linear, one entry per node, trivially reconstructable.
-
-<span class="cm">Failure mode: brittle at exception paths — add explicit error nodes, not try/catch.</span>
+    <div class="callout callout-dark">
+      <strong>Pattern selection rule.</strong> Choose the <em>simplest</em> pattern whose diagram matches your failure modes — not the most sophisticated one. Complexity compounds: a Hierarchical Tree with feedback loops inside each branch is hard to debug at 2 AM. Add one layer of complexity at a time, validate with eval, then add the next.
     </div>
 
-    <h4>LangGraph Skeleton</h4>
+    <table>
+      <thead><tr><th>Pattern</th><th>Core motion</th><th>Latency profile</th><th>Best section</th></tr></thead>
+      <tbody>
+        <tr><td>3.1 Sequential Pipeline</td><td>A → B → C → D, no branches</td><td>Slowest (sum of all steps)</td><td>Compliance, audit, SOP</td></tr>
+        <tr><td>3.2 Concurrent Fan-Out</td><td>One → many → aggregate → continue</td><td>Fastest (parallel wall-clock)</td><td>Multi-source research, batch enrichment</td></tr>
+        <tr><td>3.3 Feedback Loop</td><td>A → B ← C (until quality passes)</td><td>Variable (loops add cycles)</td><td>High-stakes accuracy, self-correcting QA</td></tr>
+        <tr><td>3.4 Hierarchical Tree</td><td>Supervisor → squads → synthesizer</td><td>Moderate (squads parallel)</td><td>Enterprise multi-domain reports</td></tr>
+        <tr><td>3.5 Orchestrator-Worker</td><td>Central planner dispatches dynamic tasks</td><td>Moderate</td><td>Support triage, task routing, ops automation</td></tr>
+        <tr><td>3.6 Blackboard / Mesh</td><td>Agents read/write shared event store freely</td><td>Unpredictable</td><td>Exploratory research, emergent coordination</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.1 SEQUENTIAL -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-sequential"><a class="anchor" href="#p-sequential">3.1 Sequential Pipeline</a></h3>
+    <p>The linear chain is the simplest and most auditable pattern. Every node has exactly one predecessor and one successor. The audit trail is a straight line: trivially reconstructable, trivially testable.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="cm">INPUT ─────────────────────────────────────────────────────────────── OUTPUT</span>
+
+<span class="node">[ USER QUERY ]</span>
+      │
+      ▼
+<span class="node">[ PLANNER ]</span> ──── emits: Plan JSON (task list, success criteria, abort conditions)
+      │
+      │  on schema validation error ──▶ <span class="node">[ ERROR NODE ]</span> ──▶ return 400
+      ▼
+<span class="node">[ RETRIEVER ]</span> ── fetches evidence from KB / web / SQL
+      │
+      │  on tool failure ──▶ retry ×2 ──▶ <span class="node">[ ERROR NODE ]</span> ──▶ surface gap
+      ▼
+<span class="node">[ CRITIC ]</span> ────── validates evidence; outputs CriticReport
+      │
+      │  ⚠ In pure sequential mode, Critic does NOT loop back.
+      │    It annotates gaps into the report and passes forward.
+      ▼
+<span class="gate">[ HITL GATE ]</span> ── human reviews CriticReport + evidence summary
+      │                                               │
+   approved ──────────────────────────────────────── rejected ──▶ <span class="node">[ ESCALATE ]</span>
+      │
+      ▼
+<span class="node">[ WRITER ]</span> ───── synthesises evidence-bound output
+      │
+      ▼
+<span class="node">[ OUTPUT ]</span> ───── delivered + logged to audit store
+
+<span class="label">Key invariant: every node emits exactly one typed output.
+                 No implicit side effects. No shared mutable state.</span>
+<span class="cm">Audit: one DynamoDB / CloudWatch log entry per node transition. Replay = re-run from checkpoint.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why sequential fits</th><th>HITL gate position</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Weekly regulatory compliance briefing</strong> — pulls new EU AI Act / GDPR guidance, summarises changes for legal team</td>
+          <td>Fixed schedule, fixed sources, fixed output template. Compliance team needs immutable audit trail. No dynamic branching required.</td>
+          <td>Before distribution — legal counsel approves before email sent to board</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Employee onboarding knowledge pack</strong> — generates role-specific handbook from HR policy KB + org chart + team wiki</td>
+          <td>Input (new employee role) deterministically maps to a fixed set of sources. Output always same format. One-shot, no iteration needed.</td>
+          <td>HR manager reviews generated pack before it's sent to new hire</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Customer contract summariser</strong> — ingests uploaded PDF, extracts key clauses, flags anomalies against standard template</td>
+          <td>Textract extraction → structured critique → summary is purely sequential. Contract doesn't change mid-process. Audit trail critical for legal defensibility.</td>
+          <td>Paralegal reviews flagged anomalies before summary delivered to account manager</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Sequential Template</h4>
     <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+<span class="kw">from</span> langgraph.checkpoint.postgres <span class="kw">import</span> PostgresSaver
 
 graph = StateGraph(<span class="tp">ResearchState</span>)
+
+<span class="cm"># Happy-path nodes</span>
 graph.<span class="fn">add_node</span>(<span class="st">"planner"</span>,   planner_node)
 graph.<span class="fn">add_node</span>(<span class="st">"retriever"</span>, retriever_node)
 graph.<span class="fn">add_node</span>(<span class="st">"critic"</span>,    critic_node)
 graph.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,      hitl_interrupt_node)
 graph.<span class="fn">add_node</span>(<span class="st">"writer"</span>,    writer_node)
 
+<span class="cm"># Error / escalation nodes</span>
+graph.<span class="fn">add_node</span>(<span class="st">"error"</span>,    error_node)
+graph.<span class="fn">add_node</span>(<span class="st">"escalate"</span>, escalation_node)
+
 graph.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+
+<span class="cm"># Linear chain — each step writes to state, next step reads it</span>
 graph.<span class="fn">add_edge</span>(<span class="st">"planner"</span>,   <span class="st">"retriever"</span>)
 graph.<span class="fn">add_edge</span>(<span class="st">"retriever"</span>, <span class="st">"critic"</span>)
 graph.<span class="fn">add_edge</span>(<span class="st">"critic"</span>,    <span class="st">"hitl"</span>)
-graph.<span class="fn">add_edge</span>(<span class="st">"hitl"</span>,      <span class="st">"writer"</span>)
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_hitl,
+    {<span class="st">"approved"</span>: <span class="st">"writer"</span>, <span class="st">"rejected"</span>: <span class="st">"escalate"</span>})
 graph.<span class="fn">add_edge</span>(<span class="st">"writer"</span>,    END)
+graph.<span class="fn">add_edge</span>(<span class="st">"escalate"</span>,  END)
+graph.<span class="fn">add_edge</span>(<span class="st">"error"</span>,     END)
 
-app = graph.<span class="fn">compile</span>(checkpointer=postgres_saver) <span class="cm"># durable state</span></pre>
+app = graph.<span class="fn">compile</span>(
+    checkpointer=<span class="fn">PostgresSaver</span>.from_conn_string(POSTGRES_URL),
+    interrupt_before=[<span class="st">"hitl"</span>]  <span class="cm"># hard pause; resumes on .update()</span>
+)</pre>
 
-    <!-- 3.2 CONCURRENT FAN-OUT -->
-    <h3 id="p-fanout"><a class="anchor" href="#p-fanout">3.2 Concurrent Fan-Out</a></h3>
-    <p><strong>When:</strong> multiple independent data sources or sub-questions; wall-clock latency matters. Fan out Retrievers in parallel, then aggregate.</p>
-    <div class="arch-diagram">
-                        ┌──▶ <span class="node">[ RETRIEVER: web ]</span>    ──┐
-                        │                             │
-<span class="node">[ PLANNER ]</span> ──▶ <span class="node">[ ROUTER ]</span> ──▶ <span class="node">[ RETRIEVER: KB ]</span>     ──▶ <span class="node">[ AGGREGATOR ]</span> ──▶ <span class="node">[ CRITIC ]</span>
-                        │                             │
-                        └──▶ <span class="node">[ RETRIEVER: SQL ]</span>   ──┘
-
-<span class="label">Aggregator deduplicates and reranks before passing to Critic.</span>
-<span class="cm">Risk: inconsistent assumptions between parallel workers — aggregator must normalize citations.</span>
-    </div>
-
-    <h4>LangGraph Fan-Out with Send API</h4>
-    <pre><span class="kw">from</span> langgraph.types <span class="kw">import</span> Send
-
-<span class="kw">def</span> <span class="fn">route_to_retrievers</span>(state: <span class="tp">ResearchState</span>):
-    <span class="cm"># Dispatch one Send per parallel task in the plan</span>
-    <span class="kw">return</span> [
-        <span class="fn">Send</span>(<span class="st">"retriever"</span>, {<span class="st">"task"</span>: task, <span class="st">"run_id"</span>: state.run_id})
-        <span class="kw">for</span> task <span class="kw">in</span> state.plan.tasks
-        <span class="kw">if</span> task.role == <span class="st">"retriever"</span> <span class="kw">and</span> task.parallel
-    ]
-
-graph.<span class="fn">add_conditional_edges</span>(<span class="st">"planner"</span>, route_to_retrievers, [<span class="st">"retriever"</span>])
-graph.<span class="fn">add_node</span>(<span class="st">"aggregator"</span>, aggregator_node)  <span class="cm"># collects all retriever outputs</span>
-graph.<span class="fn">add_edge</span>(<span class="st">"retriever"</span>, <span class="st">"aggregator"</span>)
-graph.<span class="fn">add_edge</span>(<span class="st">"aggregator"</span>, <span class="st">"critic"</span>)</pre>
-
-    <h4>n8n Fan-Out — Configuration</h4>
-    <pre><span class="cm">// n8n workflow: Planner → Split In Batches → parallel HTTP branches → Merge</span>
+    <h4>n8n — Sequential Workflow Config</h4>
+    <pre><span class="cm">// n8n: each node passes output as $json to next. No looping nodes.</span>
 {
   <span class="st">"nodes"</span>: [
-    { <span class="st">"name"</span>: <span class="st">"Planner AI Agent"</span>,  <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
-      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-opus-4"</span>, <span class="st">"systemMessage"</span>: <span class="st">"{{planner_prompt}}"</span> } },
-    { <span class="st">"name"</span>: <span class="st">"Split Tasks"</span>,         <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.splitInBatches"</span>,
-      <span class="st">"parameters"</span>: { <span class="st">"batchSize"</span>: 1 } },
-    { <span class="st">"name"</span>: <span class="st">"Retriever Agent"</span>,    <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
-      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-haiku-4"</span>, <span class="st">"systemMessage"</span>: <span class="st">"{{retriever_prompt}}"</span> } },
-    { <span class="st">"name"</span>: <span class="st">"Merge Results"</span>,       <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.merge"</span>,
-      <span class="st">"parameters"</span>: { <span class="st">"mode"</span>: <span class="st">"combine"</span>, <span class="st">"combinationMode"</span>: <span class="st">"mergeByPosition"</span> } }
+    { <span class="st">"name"</span>: <span class="st">"Planner"</span>,  <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-opus-4"</span>, <span class="st">"systemMessage"</span>: <span class="st">"{{planner_prompt}}"</span>,
+                        <span class="st">"outputParser"</span>: <span class="st">"json"</span> } },
+    { <span class="st">"name"</span>: <span class="st">"Retriever"</span>, <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-haiku-4"</span>,
+                        <span class="st">"tools"</span>: [<span class="st">"tavily"</span>, <span class="st">"vectorStore"</span>] } },
+    { <span class="st">"name"</span>: <span class="st">"Critic"</span>,    <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-sonnet-4-6"</span>, <span class="st">"outputParser"</span>: <span class="st">"json"</span> } },
+    { <span class="st">"name"</span>: <span class="st">"HITL Gate"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.wait"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"resume"</span>: <span class="st">"webhook"</span> } },
+    { <span class="st">"name"</span>: <span class="st">"Writer"</span>,    <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"model"</span>: <span class="st">"claude-sonnet-4-6"</span>, <span class="st">"tools"</span>: [] } },
+    { <span class="st">"name"</span>: <span class="st">"Send Output"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.emailSend"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"to"</span>: <span class="st">"{{$json.recipient}}"</span>, <span class="st">"text"</span>: <span class="st">"{{$json.final_output}}"</span> } }
+  ],
+  <span class="st">"connections"</span>: {
+    <span class="st">"Planner"</span>:   { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Retriever"</span> }]] },
+    <span class="st">"Retriever"</span>: { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Critic"</span> }]] },
+    <span class="st">"Critic"</span>:    { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"HITL Gate"</span> }]] },
+    <span class="st">"HITL Gate"</span>: { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Writer"</span> }]] },
+    <span class="st">"Writer"</span>:    { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Send Output"</span> }]] }
+  }
+}</pre>
+
+    <div class="callout">
+      <strong>AWS implementation.</strong> Sequential pipeline = Step Functions Standard Workflow (not Express — Standard persists execution history per state). Each state is a Lambda. Use <code>ResultPath: "$.node_output"</code> to accumulate outputs without overwriting the input. Total execution time limit: 1 year (vs. 5 minutes for Express).
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.2 CONCURRENT FAN-OUT -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-fanout"><a class="anchor" href="#p-fanout">3.2 Concurrent Fan-Out</a></h3>
+    <p>Fan-out dispatches independent sub-tasks to parallel workers, then merges results before proceeding. Wall-clock latency equals the <em>slowest</em> worker, not the sum of all. The Aggregator node is the critical piece: it must deduplicate, rerank, and normalise citations across heterogeneous sources.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ PLANNER ]</span> ── emits parallel task list (T1, T2, T3 all parallel:true)
+      │
+      │  route_to_retrievers() dispatches Send() per task
+      │
+      ├──────────────────────────────────────────────────────────┐
+      │                           │                              │
+      ▼                           ▼                              ▼
+<span class="node">[ RETRIEVER: web  ]</span>    <span class="node">[ RETRIEVER: KB   ]</span>         <span class="node">[ RETRIEVER: SQL  ]</span>
+  Tavily search          Bedrock KB / pgvector         RDS read replica
+  → 5 snippets           → 8 snippets                  → 3 rows → snippets
+      │                           │                              │
+      └──────────────────────────▶│◀─────────────────────────────┘
+                                  ▼
+                         <span class="node">[ AGGREGATOR ]</span>
+                          1. Merge snippet lists
+                          2. Deduplicate by source_id
+                          3. Rerank by cross-encoder score
+                          4. Keep top-K (default: 12)
+                          5. Normalise citation format
+                                  │
+                          on aggregation error ──▶ <span class="node">[ ERROR ]</span>
+                                  ▼
+                         <span class="node">[ CRITIC ]</span> ── validates merged evidence
+                                  │
+                      NO_GAPS ────▶ <span class="gate">[ HITL ]</span> ──▶ <span class="node">[ WRITER ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
+                                  │
+                      ABORT   ────▶ <span class="node">[ ESCALATE ]</span>
+
+<span class="label">Speed gain: 3 parallel retrievers at ~4s each = 4s total (vs. 12s sequential).</span>
+<span class="cm">Risk: workers make inconsistent assumptions. Aggregator MUST normalise before Critic sees results.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why fan-out fits</th><th>Parallel workers</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Competitive intelligence brief</strong> — research a market landscape from web news, internal deal notes (CRM SQL), and regulatory filings (KB)</td>
+          <td>Three sources are fully independent. Web latency (~3s) + SQL latency (~0.5s) + KB latency (~1s) run concurrently; total = 3s not 4.5s. Each worker scoped to one source type.</td>
+          <td>Web retriever · CRM SQL retriever · Regulatory KB retriever</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Lead enrichment pipeline</strong> — enrich incoming CRM contact with LinkedIn profile, company firmographics API, and internal customer history</td>
+          <td>Three enrichment APIs are stateless and mutually independent. Fan-out cuts enrichment from ~9s to ~3s. Aggregator merges JSON objects by field name.</td>
+          <td>LinkedIn API retriever · Firmographics API retriever · CRM history retriever</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Multi-jurisdiction legal research</strong> — same query answered from UK, EU, and US case law databases simultaneously</td>
+          <td>Jurisdiction DBs are independent. Results are aggregated by jurisdiction label. Critic checks for contradictions between jurisdictions (a different kind of gap than single-source research).</td>
+          <td>UK case law KB · EU case law KB · US case law KB</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Fan-Out with Send API</h4>
+    <pre><span class="kw">from</span> langgraph.types <span class="kw">import</span> Send
+<span class="kw">from</span> typing <span class="kw">import</span> Annotated
+<span class="kw">import</span> operator
+
+<span class="cm"># State must use an Annotated reducer to collect parallel results</span>
+<span class="kw">class</span> <span class="tp">ResearchState</span>(TypedDict):
+    evidence: Annotated[<span class="tp">list</span>, operator.add]  <span class="cm"># reducer: append, not replace</span>
+    <span class="cm"># ... other fields</span>
+
+<span class="kw">def</span> <span class="fn">route_to_retrievers</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">list</span>:
+    <span class="cm"># Send() dispatches parallel instances of the retriever node</span>
+    <span class="kw">return</span> [
+        <span class="fn">Send</span>(<span class="st">"retriever"</span>, {
+            <span class="st">"task"</span>:   task,
+            <span class="st">"run_id"</span>: state[<span class="st">"run_id"</span>],
+            <span class="st">"iter"</span>:   state[<span class="st">"retrieval_iter"</span>]
+        })
+        <span class="kw">for</span> task <span class="kw">in</span> state[<span class="st">"plan"</span>][<span class="st">"tasks"</span>]
+        <span class="kw">if</span> task[<span class="st">"role"</span>] == <span class="st">"retriever"</span> <span class="kw">and</span> task[<span class="st">"parallel"</span>]
+    ]
+
+<span class="kw">async def</span> <span class="fn">aggregator_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    snippets = []
+    seen_ids = <span class="fn">set</span>()
+    <span class="kw">for</span> result <span class="kw">in</span> state[<span class="st">"evidence"</span>]:
+        <span class="kw">for</span> s <span class="kw">in</span> result[<span class="st">"snippets"</span>]:
+            <span class="kw">if</span> s[<span class="st">"source_id"</span>] <span class="kw">not in</span> seen_ids:
+                snippets.<span class="fn">append</span>(s)
+                seen_ids.<span class="fn">add</span>(s[<span class="st">"source_id"</span>])
+    <span class="cm"># Rerank by confidence score descending, keep top 12</span>
+    snippets.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="st">"confidence"</span>], reverse=<span class="kw">True</span>)
+    <span class="kw">return</span> {<span class="st">"evidence"</span>: [snippets[:12]]}
+
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"planner"</span>,   route_to_retrievers, [<span class="st">"retriever"</span>])
+graph.<span class="fn">add_edge</span>(<span class="st">"retriever"</span>,              <span class="st">"aggregator"</span>)
+graph.<span class="fn">add_edge</span>(<span class="st">"aggregator"</span>,             <span class="st">"critic"</span>)</pre>
+
+    <h4>Langflow — Parallel Retriever Canvas</h4>
+    <pre><span class="cm">// Langflow JSON: three retriever branches converge at a custom Aggregator component</span>
+{
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"id"</span>: <span class="st">"planner"</span>,       <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-opus-4-20250514"</span>, <span class="st">"tools"</span>: [] } },
+    { <span class="st">"id"</span>: <span class="st">"ret-web"</span>,       <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+                <span class="st">"tools"</span>: [<span class="st">"TavilySearchResults"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"ret-kb"</span>,        <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+                <span class="st">"tools"</span>: [<span class="st">"AmazonBedrockKB"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"ret-sql"</span>,       <span class="st">"type"</span>: <span class="st">"ToolCallingAgent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-haiku-4-20251001"</span>,
+                <span class="st">"tools"</span>: [<span class="st">"SQLDatabase"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"aggregator"</span>,    <span class="st">"type"</span>: <span class="st">"CustomComponent"</span>,
+      <span class="st">"data"</span>: { <span class="st">"code"</span>: <span class="st">"deduplicate_and_rerank(inputs)"</span>,
+                <span class="st">"inputs"</span>: [<span class="st">"ret-web"</span>, <span class="st">"ret-kb"</span>, <span class="st">"ret-sql"</span>] } },
+    { <span class="st">"id"</span>: <span class="st">"critic"</span>,        <span class="st">"type"</span>: <span class="st">"LLMChain"</span>,
+      <span class="st">"data"</span>: { <span class="st">"model_name"</span>: <span class="st">"claude-sonnet-4-6"</span>,
+                <span class="st">"output_schema"</span>: <span class="st">"CriticReport"</span> } }
+  ],
+  <span class="st">"edges"</span>: [
+    { <span class="st">"source"</span>: <span class="st">"planner"</span>, <span class="st">"target"</span>: <span class="st">"ret-web"</span> },
+    { <span class="st">"source"</span>: <span class="st">"planner"</span>, <span class="st">"target"</span>: <span class="st">"ret-kb"</span> },
+    { <span class="st">"source"</span>: <span class="st">"planner"</span>, <span class="st">"target"</span>: <span class="st">"ret-sql"</span> },
+    { <span class="st">"source"</span>: <span class="st">"ret-web"</span>,  <span class="st">"target"</span>: <span class="st">"aggregator"</span> },
+    { <span class="st">"source"</span>: <span class="st">"ret-kb"</span>,   <span class="st">"target"</span>: <span class="st">"aggregator"</span> },
+    { <span class="st">"source"</span>: <span class="st">"ret-sql"</span>,  <span class="st">"target"</span>: <span class="st">"aggregator"</span> },
+    { <span class="st">"source"</span>: <span class="st">"aggregator"</span>, <span class="st">"target"</span>: <span class="st">"critic"</span> }
   ]
 }</pre>
 
-    <!-- 3.3 FEEDBACK LOOP -->
-    <h3 id="p-feedback"><a class="anchor" href="#p-feedback">3.3 Feedback Loop (Critic → Retriever Cycle)</a></h3>
-    <p><strong>When:</strong> high-stakes outputs, legal/compliance review, accuracy-critical research. The Critic triggers Retriever re-runs until quality thresholds pass. A hard max-loop guard is mandatory.</p>
-    <div class="arch-diagram">
-<span class="node">[ PLANNER ]</span> ──▶ <span class="node">[ RETRIEVER ]</span> ──▶ <span class="node">[ CRITIC ]</span>
-                       ▲                │
-                       │   GAPS_FOUND   │   status = GAPS_FOUND AND loops &lt; 3
-                       └───────────────┘
-                                        │
-                          NO_GAPS ──────▶ <span class="gate">[ HITL GATE ]</span> ──▶ <span class="node">[ WRITER ]</span>
-                                        │
-                          ABORT ────────▶ <span class="node">[ ESCALATE TO HUMAN ]</span>
+    <h4>AWS Step Functions — Parallel State</h4>
+    <pre>{
+  <span class="st">"FanOut"</span>: {
+    <span class="st">"Type"</span>: <span class="st">"Parallel"</span>,
+    <span class="st">"Branches"</span>: [
+      { <span class="st">"StartAt"</span>: <span class="st">"WebRetriever"</span>,
+        <span class="st">"States"</span>: { <span class="st">"WebRetriever"</span>: { <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+          <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+          <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"retriever-web"</span>,
+                           <span class="st">"Payload.$"</span>: <span class="st">"$.tasks[0]"</span> }, <span class="st">"End"</span>: <span class="kw">true</span> } } },
+      { <span class="st">"StartAt"</span>: <span class="st">"KBRetriever"</span>,
+        <span class="st">"States"</span>:  { <span class="st">"KBRetriever"</span>:  { <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+          <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+          <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"retriever-kb"</span>,
+                           <span class="st">"Payload.$"</span>: <span class="st">"$.tasks[1]"</span> }, <span class="st">"End"</span>: <span class="kw">true</span> } } },
+      { <span class="st">"StartAt"</span>: <span class="st">"SQLRetriever"</span>,
+        <span class="st">"States"</span>:  { <span class="st">"SQLRetriever"</span>:  { <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+          <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+          <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"retriever-sql"</span>,
+                           <span class="st">"Payload.$"</span>: <span class="st">"$.tasks[2]"</span> }, <span class="st">"End"</span>: <span class="kw">true</span> } } }
+    ],
+    <span class="st">"ResultPath"</span>: <span class="st">"$.raw_evidence"</span>,  <span class="cm">// array of 3 results</span>
+    <span class="st">"Next"</span>: <span class="st">"Aggregator"</span>
+  },
+  <span class="st">"Aggregator"</span>: {
+    <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+    <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::lambda:invoke"</span>,
+    <span class="st">"Parameters"</span>: { <span class="st">"FunctionName"</span>: <span class="st">"aggregator"</span>, <span class="st">"Payload.$"</span>: <span class="st">"$.raw_evidence"</span> },
+    <span class="st">"ResultPath"</span>: <span class="st">"$.evidence"</span>,
+    <span class="st">"Next"</span>: <span class="st">"Critic"</span>
+  }
+}</pre>
 
-<span class="label">Loop guard: critic_loops ≥ 3 → force ABORT even if GAPS_FOUND.</span>
-<span class="cm">Cost: each cycle adds ~$0.02–0.08 at Haiku rates. Set budget ceiling per run.</span>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.3 FEEDBACK LOOP -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-feedback"><a class="anchor" href="#p-feedback">3.3 Feedback Loop (Critic → Retriever Cycle)</a></h3>
+    <p>The feedback loop gives the system self-correction capability: the Critic inspects evidence, identifies gaps, and re-tasks the Retriever with refined queries until quality thresholds pass. <strong>The hard max-loop guard is not optional</strong> — without it, a poorly scoped query can recurse indefinitely.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ PLANNER ]</span> ── emits initial task list + success_criteria + abort_conditions
+      │
+      ▼
+<span class="node">[ RETRIEVER ]</span> ◀────────────────────────────────────────┐
+      │  state.retrieval_iter += 1                         │
+      │  on iter 1: use original queries from Plan         │  GAPS_FOUND:
+      │  on iter 2+: use critic_report.retry_queries       │  re-run with
+      ▼                                                    │  refined queries
+<span class="node">[ CRITIC ]</span>                                               │
+      │                                                    │
+      ├── status == <span class="label">NO_GAPS</span>  ────────────────────────────▶ exit loop
+      │                                                    │
+      ├── status == <span class="label">GAPS_FOUND</span>  AND  loops &lt; 3  ──────────┘
+      │   • increment critic_loops
+      │   • inject retry_queries into state
+      │   • clear stale evidence list
+      │
+      ├── status == <span class="label">GAPS_FOUND</span>  AND  loops ≥ 3  ──────────▶ <span class="node">[ ESCALATE ]</span>
+      │   (loop guard triggered — do not loop again)
+      │
+      └── status == <span class="label">ABORT</span>  ──────────────────────────────▶ <span class="node">[ ESCALATE ]</span>
+          (critical issue or confidence_floor &lt; 0.4)
+
+<span class="cm">After exit loop:</span>
+      │
+      ▼
+<span class="gate">[ HITL GATE ]</span> ── human sees evidence + CriticReport
+      │
+   approved ──▶ <span class="node">[ WRITER ]</span> ──▶ <span class="node">[ OUTPUT ]</span>
+   rejected ──▶ <span class="node">[ ESCALATE ]</span>
+
+<span class="label">Loop cost: each cycle ≈ $0.02–0.08 at Haiku rates. Budget ceiling in state prevents runaway.</span>
+<span class="cm">Trace: LangSmith records each loop as a separate span — you can replay loop N to debug.</span>
     </div>
 
-    <h4>LangGraph Conditional Edge — Loop Control</h4>
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why feedback loop fits</th><th>Typical loops in practice</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Due diligence report for M&amp;A target</strong> — researches financials, litigation history, regulatory standing, and market position</td>
+          <td>Evidence quality is directly tied to deal risk. If Critic finds the litigation history is sparse, a second retrieval with more specific Gremlin queries (Neptune graph) can surface related entity cases. Human-level accuracy is the bar, not throughput.</td>
+          <td>1.6 average (80% resolve in one pass; 20% need a second)</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Technical RFP response generation</strong> — generates vendor response to a client RFP using internal capability docs, case studies, and pricing data</td>
+          <td>Critic checks that every RFP requirement section has matching evidence. Missing requirements trigger targeted re-retrieval from the case study KB. No loop = incomplete response = lost deal.</td>
+          <td>2.1 average (RFPs have many requirements; gaps are common on first pass)</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Pharmacovigilance adverse event summary</strong> — extracts and structures adverse events from clinical documents for regulatory submission</td>
+          <td>Regulatory context: every adverse event must be classified, dated, and cited. Critic checks for missing ICD codes, undated events, or unresolved severity classifications. Loop until zero unresolved flags or escalate to pharmacovigilance team.</td>
+          <td>2.8 average (high false-negative cost drives thorough looping)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Loop Control with Refined Queries</h4>
     <pre><span class="kw">def</span> <span class="fn">route_after_critic</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">str</span>:
-    report = state.critic_report
-    <span class="kw">if</span> report.status == <span class="st">"NO_GAPS"</span>:
+    report = state[<span class="st">"critic_report"</span>]
+    loops  = state[<span class="st">"critic_loops"</span>]
+
+    <span class="kw">if</span> report[<span class="st">"status"</span>] == <span class="st">"NO_GAPS"</span>:
         <span class="kw">return</span> <span class="st">"hitl"</span>
-    <span class="kw">if</span> report.status == <span class="st">"ABORT"</span> <span class="kw">or</span> state.critic_loops >= 3:
+
+    <span class="kw">if</span> report[<span class="st">"status"</span>] == <span class="st">"ABORT"</span> <span class="kw">or</span> loops >= 3:
         <span class="kw">return</span> <span class="st">"escalate"</span>
-    <span class="cm"># GAPS_FOUND — increment loop counter, re-run retriever</span>
-    state.critic_loops += 1
-    state.evidence = []  <span class="cm"># clear stale evidence</span>
-    <span class="kw">return</span> <span class="st">"retriever"</span>
+
+    <span class="cm"># GAPS_FOUND — inject refined retry queries into plan tasks</span>
+    <span class="kw">return</span> <span class="st">"retry_planner"</span>  <span class="cm"># lightweight re-planner generates new retrieval tasks</span>
+
+<span class="kw">async def</span> <span class="fn">retry_planner_node</span>(state: <span class="tp">ResearchState</span>) -> <span class="tp">dict</span>:
+    <span class="cm"># Mini-planner: converts critic gaps into specific retrieval sub-tasks</span>
+    gaps   = state[<span class="st">"critic_report"</span>][<span class="st">"issues"</span>]
+    new_tasks = <span class="kw">await</span> gap_to_task_chain.<span class="fn">ainvoke</span>({
+        <span class="st">"original_plan"</span>: state[<span class="st">"plan"</span>],
+        <span class="st">"gaps"</span>:          gaps
+    })
+    <span class="kw">return</span> {
+        <span class="st">"plan"</span>:          {**state[<span class="st">"plan"</span>], <span class="st">"tasks"</span>: new_tasks},
+        <span class="st">"evidence"</span>:      [],          <span class="cm"># clear stale evidence</span>
+        <span class="st">"critic_loops"</span>:  state[<span class="st">"critic_loops"</span>] + 1,
+        <span class="st">"retrieval_iter"</span>: state[<span class="st">"retrieval_iter"</span>] + 1
+    }
 
 graph.<span class="fn">add_conditional_edges</span>(
-    <span class="st">"critic"</span>,
-    route_after_critic,
-    {<span class="st">"hitl"</span>: <span class="st">"hitl"</span>, <span class="st">"retriever"</span>: <span class="st">"retriever"</span>, <span class="st">"escalate"</span>: <span class="st">"escalate"</span>}
-)</pre>
+    <span class="st">"critic"</span>, route_after_critic,
+    {<span class="st">"hitl"</span>:<span class="st">"hitl"</span>, <span class="st">"escalate"</span>:<span class="st">"escalate"</span>, <span class="st">"retry_planner"</span>:<span class="st">"retry_planner"</span>}
+)
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"retry_planner"</span>, route_to_retrievers, [<span class="st">"retriever"</span>])</pre>
 
+    <h4>n8n — Feedback Loop with Loop Over Items</h4>
+    <pre><span class="cm">// n8n: Loop Over Items node tracks iteration count in static workflow data</span>
+{
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Loop Guard"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.if"</span>,
+      <span class="st">"parameters"</span>: {
+        <span class="st">"conditions"</span>: [{
+          <span class="st">"value1"</span>: <span class="st">"={{ $workflow.staticData.critic_loops }}"</span>,
+          <span class="st">"operation"</span>: <span class="st">"smaller"</span>, <span class="st">"value2"</span>: 3
+        }]
+      }
+    },
+    { <span class="st">"name"</span>: <span class="st">"Increment Loop"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.set"</span>,
+      <span class="st">"parameters"</span>: {
+        <span class="st">"assignments"</span>: [{
+          <span class="st">"name"</span>: <span class="st">"critic_loops"</span>,
+          <span class="st">"value"</span>: <span class="st">"={{ $workflow.staticData.critic_loops + 1 }}"</span>
+        }]
+      }
+    },
+    { <span class="st">"name"</span>: <span class="st">"Route on Critic Status"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.switch"</span>,
+      <span class="st">"parameters"</span>: {
+        <span class="st">"dataPropertyName"</span>: <span class="st">"critic_report.status"</span>,
+        <span class="st">"rules"</span>: [
+          { <span class="st">"value"</span>: <span class="st">"NO_GAPS"</span>,   <span class="st">"output"</span>: 0 },
+          { <span class="st">"value"</span>: <span class="st">"GAPS_FOUND"</span>, <span class="st">"output"</span>: 1 },
+          { <span class="st">"value"</span>: <span class="st">"ABORT"</span>,      <span class="st">"output"</span>: 2 }
+        ]
+      }
+    }
+  ],
+  <span class="st">"connections"</span>: {
+    <span class="st">"Route on Critic Status"</span>: {
+      <span class="st">"main"</span>: [
+        [{ <span class="st">"node"</span>: <span class="st">"HITL Gate"</span> }],          <span class="cm">// output 0: NO_GAPS</span>
+        [{ <span class="st">"node"</span>: <span class="st">"Loop Guard"</span> }],         <span class="cm">// output 1: GAPS_FOUND</span>
+        [{ <span class="st">"node"</span>: <span class="st">"Escalate"</span> }]            <span class="cm">// output 2: ABORT</span>
+      ]
+    },
+    <span class="st">"Loop Guard"</span>: {
+      <span class="st">"main"</span>: [
+        [{ <span class="st">"node"</span>: <span class="st">"Increment Loop"</span> }],    <span class="cm">// true: loops &lt; 3, continue</span>
+        [{ <span class="st">"node"</span>: <span class="st">"Escalate"</span> }]           <span class="cm">// false: loops ≥ 3, escalate</span>
+      ]
+    },
+    <span class="st">"Increment Loop"</span>: { <span class="st">"main"</span>: [[{ <span class="st">"node"</span>: <span class="st">"Retriever"</span> }]] }
+  }
+}</pre>
+
+    <h4>LangSmith — Tracking Loop Quality Over Time</h4>
+    <pre><span class="cm"># Tag each loop iteration so LangSmith can track quality per iteration</span>
+<span class="kw">import</span> os
+os.environ[<span class="st">"LANGCHAIN_TRACING_V2"</span>] = <span class="st">"true"</span>
+
+<span class="kw">from</span> langsmith <span class="kw">import</span> traceable
+
+@<span class="fn">traceable</span>(tags=[<span class="st">"feedback-loop"</span>], metadata={<span class="st">"loop_iter"</span>: <span class="st">"{{critic_loops}}"</span>})
+<span class="kw">async def</span> <span class="fn">critic_node</span>(state):
+    <span class="cm"># LangSmith records: which loop iteration, input evidence, output report</span>
+    <span class="cm"># Dashboard query: avg critic_loops where status == "NO_GAPS" → quality trend</span>
+    report = <span class="kw">await</span> critic_chain.<span class="fn">ainvoke</span>(state[<span class="st">"evidence"</span>])
+    <span class="kw">return</span> {<span class="st">"critic_report"</span>: report, <span class="st">"critic_loops"</span>: state[<span class="st">"critic_loops"</span>] + 1}</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- 3.4 HIERARCHICAL -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <h3 id="p-hierarchical"><a class="anchor" href="#p-hierarchical">3.4 Hierarchical Tree (Supervisor → Worker Squads)</a></h3>
-    <p><strong>When:</strong> very large research tasks spanning multiple domains — codebase audits, enterprise intelligence reports, multi-jurisdiction compliance analysis. A top-level Supervisor decomposes into domain-specific sub-teams.</p>
-    <div class="arch-diagram">
-                        <span class="node">[ SUPERVISOR PLANNER ]</span>
-                       /          |          \
-          <span class="node">[ SQUAD A ]</span>      <span class="node">[ SQUAD B ]</span>      <span class="node">[ SQUAD C ]</span>
-         P→R→C→W          P→R→C→W          P→R→C→W
-         Domain: Legal     Domain: Tech      Domain: Finance
-              \                |                /
-               └──────▶ <span class="node">[ SYNTHESIS WRITER ]</span> ◀──┘
-                                │
-                         <span class="gate">[ HITL GATE ]</span>
-                                │
-                         <span class="node">[ FINAL OUTPUT ]</span>
+    <p>For large tasks spanning multiple domains, a Supervisor decomposes the problem into domain squads, each of which runs the full 4-agent pipeline independently. A Synthesis Writer at the top merges their outputs. <strong>Never pass full text upward — only citation IDs</strong>; the Synthesis Writer fetches full snippets from a shared evidence store.</p>
 
-<span class="cm">Risk: information loss through summarization at each level.
-Mitigation: pass citation IDs (not full text) upward; Synthesis Writer
-pulls full snippets from shared evidence store by ID.</span>
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ USER QUERY ]</span>
+      │
+      ▼
+<span class="node">[ SUPERVISOR PLANNER ]</span>  ← frontier model (Claude Opus 4)
+  • Decomposes into domain sub-plans
+  • Assigns each sub-plan to a Squad
+  • Defines cross-squad HITL gates
+      │
+      ├───────────────────┬───────────────────┐
+      ▼                   ▼                   ▼
+<span class="node">[ SQUAD A: Legal  ]</span>  <span class="node">[ SQUAD B: Tech   ]</span>  <span class="node">[ SQUAD C: Finance]</span>
+  Full pipeline:         Full pipeline:         Full pipeline:
+  Planner                Planner                Planner
+  → Retriever(s)         → Retriever(s)         → Retriever(s)
+  → Critic               → Critic               → Critic
+  → Writer               → Writer               → Writer
+  → SquadReport_A        → SquadReport_B        → SquadReport_C
+      │                       │                       │
+      │  passes: citation IDs + squad_confidence      │
+      └───────────────────┬───────────────────────────┘
+                          ▼
+                  <span class="store">[ SHARED EVIDENCE STORE ]</span>  ← S3 / DynamoDB / pgvector
+                  (full snippets keyed by citation ID)
+                          │
+                          ▼
+                  <span class="node">[ SYNTHESIS WRITER ]</span>
+                  • Fetches snippets by citation ID
+                  • Merges squad findings
+                  • Flags cross-squad contradictions
+                          │
+                  <span class="gate">[ HITL GATE ]</span>  ← cross-domain expert reviews
+                          │
+                  <span class="node">[ FINAL OUTPUT ]</span>
+
+<span class="cm">Risk: information loss at each squad boundary.
+Guard: Synthesis Writer queries evidence store directly — NOT squad summaries.</span>
+<span class="label">Cost: N squads × per-squad cost. Use Haiku for squad Retrievers; Opus only at Supervisor.</span>
     </div>
 
-    <h4>AWS Step Functions — Hierarchical Execution</h4>
-    <pre><span class="cm">// AWS Step Functions state machine (Express Workflow, parallel branches)</span>
-{
-  <span class="st">"Comment"</span>: <span class="st">"Hierarchical research squad orchestration"</span>,
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why hierarchy fits</th><th>Squad decomposition</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Enterprise AI vendor assessment</strong> — evaluates 3 AI platform vendors across security, legal compliance, technical capability, and commercial terms</td>
+          <td>Each domain (security, legal, tech, commercial) requires specialist tools (SIEM KB, contract DB, benchmark DB, pricing DB). Squads run in parallel. No squad can assess another's domain. Synthesis Writer produces the final scorecard.</td>
+          <td>Security squad · Legal/compliance squad · Technical eval squad · Commercial squad</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Multi-jurisdiction regulatory gap analysis</strong> — determines what changes are needed to comply with GDPR (EU), CCPA (US), and PDPA (Thailand) simultaneously</td>
+          <td>Jurisdiction-specific case law and regulator guidance differs. Each squad works from its own KB. Synthesis Writer identifies where a single policy change satisfies multiple jurisdictions (cost optimisation for compliance team).</td>
+          <td>EU/GDPR squad · US/CCPA squad · APAC/PDPA squad</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Product launch readiness report</strong> — aggregates go-to-market, engineering readiness, customer support prep, and legal sign-off into one executive report</td>
+          <td>Each function owns its own readiness criteria and evidence. Function teams can run their squad in parallel with other functions. Supervisor sets a cross-squad success criterion: all squads must reach "ready" before the launch gate.</td>
+          <td>GTM squad · Engineering squad · Support squad · Legal squad</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Sub-Graphs for Each Squad</h4>
+    <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+
+<span class="cm"># Each squad is its own compiled sub-graph</span>
+<span class="kw">def</span> <span class="fn">build_squad_graph</span>(domain: <span class="tp">str</span>) -> <span class="tp">CompiledGraph</span>:
+    g = StateGraph(<span class="tp">SquadState</span>)
+    g.<span class="fn">add_node</span>(<span class="st">"planner"</span>,   <span class="fn">make_planner</span>(domain))
+    g.<span class="fn">add_node</span>(<span class="st">"retriever"</span>, <span class="fn">make_retriever</span>(domain))
+    g.<span class="fn">add_node</span>(<span class="st">"critic"</span>,    critic_node)
+    g.<span class="fn">add_node</span>(<span class="st">"writer"</span>,    <span class="fn">make_writer</span>(domain))
+    g.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+    g.<span class="fn">add_edge</span>(<span class="st">"planner"</span>,   <span class="st">"retriever"</span>)
+    g.<span class="fn">add_conditional_edges</span>(<span class="st">"retriever"</span>, ..., [<span class="st">"critic"</span>])
+    g.<span class="fn">add_conditional_edges</span>(<span class="st">"critic"</span>, ..., {<span class="st">"ok"</span>:<span class="st">"writer"</span>, <span class="st">"retry"</span>:<span class="st">"retriever"</span>})
+    g.<span class="fn">add_edge</span>(<span class="st">"writer"</span>, END)
+    <span class="kw">return</span> g.<span class="fn">compile</span>(checkpointer=postgres_saver)
+
+legal_squad   = <span class="fn">build_squad_graph</span>(<span class="st">"legal"</span>)
+tech_squad    = <span class="fn">build_squad_graph</span>(<span class="st">"technology"</span>)
+finance_squad = <span class="fn">build_squad_graph</span>(<span class="st">"finance"</span>)
+
+<span class="cm"># Top-level graph treats each squad as a node</span>
+top = StateGraph(<span class="tp">SupervisorState</span>)
+top.<span class="fn">add_node</span>(<span class="st">"supervisor"</span>, supervisor_planner_node)
+top.<span class="fn">add_node</span>(<span class="st">"legal"</span>,      legal_squad)   <span class="cm"># sub-graph as node</span>
+top.<span class="fn">add_node</span>(<span class="st">"tech"</span>,       tech_squad)
+top.<span class="fn">add_node</span>(<span class="st">"finance"</span>,    finance_squad)
+top.<span class="fn">add_node</span>(<span class="st">"synthesiser"</span>,synthesis_writer_node)
+top.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,       hitl_node)
+
+top.<span class="fn">set_entry_point</span>(<span class="st">"supervisor"</span>)
+<span class="cm"># Fan-out to all squads (Send API)</span>
+top.<span class="fn">add_conditional_edges</span>(<span class="st">"supervisor"</span>, route_to_squads, [<span class="st">"legal"</span>,<span class="st">"tech"</span>,<span class="st">"finance"</span>])
+top.<span class="fn">add_edge</span>(<span class="st">"legal"</span>,    <span class="st">"synthesiser"</span>)
+top.<span class="fn">add_edge</span>(<span class="st">"tech"</span>,     <span class="st">"synthesiser"</span>)
+top.<span class="fn">add_edge</span>(<span class="st">"finance"</span>,  <span class="st">"synthesiser"</span>)
+top.<span class="fn">add_edge</span>(<span class="st">"synthesiser"</span>, <span class="st">"hitl"</span>)
+top.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_hitl, {<span class="st">"approved"</span>: END, <span class="st">"rejected"</span>: <span class="st">"escalate"</span>})</pre>
+
+    <h4>AWS Step Functions — Nested State Machines</h4>
+    <pre>{
   <span class="st">"StartAt"</span>: <span class="st">"SupervisorPlanner"</span>,
   <span class="st">"States"</span>: {
     <span class="st">"SupervisorPlanner"</span>: {
       <span class="st">"Type"</span>: <span class="st">"Task"</span>,
-      <span class="st">"Resource"</span>: <span class="st">"arn:aws:lambda:eu-west-1:ACCOUNT:function:supervisor-planner"</span>,
-      <span class="st">"ResultPath"</span>: <span class="st">"$.plan"</span>,
-      <span class="st">"Next"</span>: <span class="st">"DomainSquads"</span>
+      <span class="st">"Resource"</span>: <span class="st">"arn:aws:lambda:::function:supervisor-planner"</span>,
+      <span class="st">"ResultPath"</span>: <span class="st">"$.domain_plans"</span>, <span class="st">"Next"</span>: <span class="st">"SquadExecution"</span>
     },
-    <span class="st">"DomainSquads"</span>: {
+    <span class="st">"SquadExecution"</span>: {
       <span class="st">"Type"</span>: <span class="st">"Parallel"</span>,
       <span class="st">"Branches"</span>: [
-        { <span class="st">"StartAt"</span>: <span class="st">"LegalSquad"</span>,   <span class="st">"States"</span>: { <span class="st">"LegalSquad"</span>:   { <span class="st">"Type"</span>: <span class="st">"Task"</span>, <span class="st">"Resource"</span>: <span class="st">"...legal-squad"</span>,   <span class="st">"End"</span>: <span class="kw">true</span> } } },
-        { <span class="st">"StartAt"</span>: <span class="st">"TechSquad"</span>,    <span class="st">"States"</span>: { <span class="st">"TechSquad"</span>:    { <span class="st">"Type"</span>: <span class="st">"Task"</span>, <span class="st">"Resource"</span>: <span class="st">"...tech-squad"</span>,    <span class="st">"End"</span>: <span class="kw">true</span> } } },
-        { <span class="st">"StartAt"</span>: <span class="st">"FinanceSquad"</span>, <span class="st">"States"</span>: { <span class="st">"FinanceSquad"</span>: { <span class="st">"Type"</span>: <span class="st">"Task"</span>, <span class="st">"Resource"</span>: <span class="st">"...finance-squad"</span>, <span class="st">"End"</span>: <span class="kw">true</span> } } }
+        { <span class="st">"StartAt"</span>: <span class="st">"LegalSquad"</span>,
+          <span class="st">"States"</span>: { <span class="st">"LegalSquad"</span>: {
+            <span class="st">"Type"</span>: <span class="st">"Task"</span>,
+            <span class="st">"Resource"</span>: <span class="st">"arn:aws:states:::states:startExecution.sync"</span>,
+            <span class="st">"Parameters"</span>: {
+              <span class="st">"StateMachineArn"</span>: <span class="st">"arn:aws:states:::stateMachine:squad-pipeline"</span>,
+              <span class="st">"Input"</span>: { <span class="st">"domain"</span>: <span class="st">"legal"</span>, <span class="st">"plan.$"</span>: <span class="st">"$.domain_plans.legal"</span> }
+            }, <span class="st">"End"</span>: <span class="kw">true</span>
+          }}
+        }
+        <span class="cm">// ... TechSquad, FinanceSquad branches identical</span>
       ],
       <span class="st">"ResultPath"</span>: <span class="st">"$.squad_outputs"</span>,
       <span class="st">"Next"</span>: <span class="st">"SynthesisWriter"</span>
     },
     <span class="st">"SynthesisWriter"</span>: {
       <span class="st">"Type"</span>: <span class="st">"Task"</span>,
-      <span class="st">"Resource"</span>: <span class="st">"arn:aws:lambda:eu-west-1:ACCOUNT:function:synthesis-writer"</span>,
-      <span class="st">"End"</span>: <span class="kw">true</span>
+      <span class="st">"Resource"</span>: <span class="st">"arn:aws:lambda:::function:synthesis-writer"</span>,
+      <span class="st">"Parameters"</span>: {
+        <span class="st">"citation_ids.$"</span>: <span class="st">"$.squad_outputs[*].citation_ids"</span>,
+        <span class="st">"evidence_store_table"</span>: <span class="st">"research-evidence"</span>
+      }, <span class="st">"Next"</span>: <span class="st">"HITLGate"</span>
     }
   }
 }</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.5 ORCHESTRATOR-WORKER -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-orchestrator"><a class="anchor" href="#p-orchestrator">3.5 Orchestrator-Worker (Dynamic Task Dispatch)</a></h3>
+    <p>An Orchestrator agent maintains a task queue and dynamically selects and dispatches to specialist Worker agents based on the current state. Unlike the Hierarchical Tree where squads are predetermined, the Orchestrator can choose <em>which</em> worker to invoke next based on intermediate results. This pattern enables true dynamic routing — but makes it harder to trace and debug than static graphs.</p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="node">[ USER REQUEST ]</span>
+      │
+      ▼
+<span class="node">[ ORCHESTRATOR ]</span>  ← stateful; sees all previous results
+  • Maintains task queue
+  • Selects next worker based on current state
+  • Re-evaluates queue after each worker completes
+  • Terminates when all tasks done OR abort condition met
+      │
+      │  select_next_worker(state) → worker_type
+      │
+      ├──────────────────────────────────────────────────────┐
+      │                                                       │
+    ┌─▼──────────────┐    ┌─────────────────┐    ┌──────────▼──────┐
+    │ <span class="node">WORKER: Search  </span>│    │ <span class="node">WORKER: Analyst </span>│    │ <span class="node">WORKER: Drafter </span>│
+    │ (retriever)    │    │ (critic/QA)     │    │ (writer)        │
+    │ tools: web, KB │    │ tools: none     │    │ tools: none     │
+    └────────────────┘    └─────────────────┘    └─────────────────┘
+      │                          │                       │
+      └──────────────────────────▼───────────────────────┘
+                         results written to shared state
+                                 │
+                         Orchestrator re-evaluates:
+                         • task_queue empty → done
+                         • new tasks revealed by results → continue
+                         • abort condition met → escalate
+
+<span class="label">Key difference from Hierarchical: Orchestrator can invoke Worker A → Worker B → Worker A again.
+                                   The path is not predetermined.</span>
+<span class="cm">Risk: Orchestrator context window grows with every iteration. Use state summarisation node.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why Orchestrator-Worker fits</th><th>Workers used</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>IT support ticket triage and resolution</strong> — analyses incoming support tickets, routes to correct resolution path, may need to query multiple systems before resolving</td>
+          <td>Each ticket is unique. Some need only a KB lookup; others need DB query + log analysis + escalation. The Orchestrator decides after each step whether to search again, escalate, or draft a response. Static graph would need 2<sup>N</sup> branches.</td>
+          <td>KB search worker · Log analysis worker · Ticketing system writer · Escalation worker</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Sales intelligence assistant</strong> — answers rep questions about prospects by dynamically choosing between CRM, web search, news, and internal docs</td>
+          <td>Question type determines tool sequence. "What's their tech stack?" → web search. "Did we speak before?" → CRM query. "Are they in the news?" → news API. Orchestrator chains these dynamically without pre-specifying the path.</td>
+          <td>CRM reader · Web search · News API · Internal docs KB · Draft email</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Code review and remediation agent</strong> — reviews a PR diff, identifies issues, fetches relevant docs, suggests fixes, and drafts a code review comment</td>
+          <td>Number and type of issues found by the first pass determines what the Orchestrator does next (security doc lookup, language spec lookup, or draft immediately). Dynamic ordering beats a predetermined pipeline.</td>
+          <td>Static analysis tool · Security KB · Language spec KB · Code fixer · Comment drafter</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — ReAct-Style Orchestrator</h4>
+    <pre><span class="kw">from</span> langgraph.prebuilt <span class="kw">import</span> create_react_agent
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+
+<span class="cm"># Define workers as typed tools the Orchestrator can call</span>
+<span class="kw">from</span> langchain.tools <span class="kw">import</span> StructuredTool
+
+search_worker = StructuredTool(
+    name=<span class="st">"search"</span>,
+    description=<span class="st">"Search web and KB for information about a topic"</span>,
+    func=search_worker_fn,
+    args_schema=SearchInput
+)
+analyst_worker = StructuredTool(
+    name=<span class="st">"analyse"</span>,
+    description=<span class="st">"Critically analyse a set of evidence snippets for gaps"</span>,
+    func=analyst_worker_fn,
+    args_schema=AnalystInput
+)
+drafter_worker = StructuredTool(
+    name=<span class="st">"draft"</span>,
+    description=<span class="st">"Draft a structured output from approved evidence"</span>,
+    func=drafter_worker_fn,
+    args_schema=DraftInput
+)
+
+<span class="cm"># Orchestrator: ReAct agent with workers as tools</span>
+orchestrator = <span class="fn">create_react_agent</span>(
+    model=claude_opus_4,
+    tools=[search_worker, analyst_worker, drafter_worker],
+    state_schema=<span class="tp">OrchestratorState</span>,
+    checkpointer=postgres_saver
+)
+
+<span class="cm"># Wrap in outer graph for HITL gate</span>
+outer = StateGraph(<span class="tp">OrchestratorState</span>)
+outer.<span class="fn">add_node</span>(<span class="st">"orchestrator"</span>, orchestrator)
+outer.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,          hitl_node)
+outer.<span class="fn">set_entry_point</span>(<span class="st">"orchestrator"</span>)
+outer.<span class="fn">add_edge</span>(<span class="st">"orchestrator"</span>, <span class="st">"hitl"</span>)
+outer.<span class="fn">add_conditional_edges</span>(<span class="st">"hitl"</span>, route_hitl, {<span class="st">"approved"</span>: END, <span class="st">"rejected"</span>: <span class="st">"escalate"</span>})</pre>
+
+    <h4>n8n — Orchestrator with Dynamic Branch Selection</h4>
+    <pre><span class="cm">// AI Agent node in n8n acts as Orchestrator — it decides which tools to call</span>
+{
+  <span class="st">"name"</span>: <span class="st">"Orchestrator Agent"</span>,
+  <span class="st">"type"</span>: <span class="st">"@n8n/n8n-nodes-langchain.agent"</span>,
+  <span class="st">"parameters"</span>: {
+    <span class="st">"model"</span>: <span class="st">"claude-opus-4"</span>,
+    <span class="st">"systemMessage"</span>: <span class="st">"You are an orchestrator. Use the provided tools in whatever order needed to complete the task. Always use `analyse` before `draft`. Max 10 tool calls total."</span>,
+    <span class="st">"tools"</span>: [
+      <span class="st">"search_kb"</span>,       <span class="cm">// n8n: Vector Store Tool</span>
+      <span class="st">"search_web"</span>,      <span class="cm">// n8n: HTTP Request → Tavily</span>
+      <span class="st">"query_crm"</span>,       <span class="cm">// n8n: HubSpot / Salesforce node</span>
+      <span class="st">"analyse"</span>,         <span class="cm">// n8n: sub-workflow call (analyst agent)</span>
+      <span class="st">"draft_output"</span>     <span class="cm">// n8n: sub-workflow call (writer agent)</span>
+    ],
+    <span class="st">"maxIterations"</span>: 10,
+    <span class="st">"returnIntermediateSteps"</span>: <span class="kw">true</span>  <span class="cm">// for audit trail</span>
+  }
+}</pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 3.6 BLACKBOARD / MESH -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h3 id="p-blackboard"><a class="anchor" href="#p-blackboard">3.6 Blackboard / Mesh</a></h3>
+    <p>In the Blackboard pattern, agents do not call each other directly — they read from and write to a shared structured event store (the "blackboard"). Each agent watches for relevant state changes and reacts. This enables emergent coordination but sacrifices determinism. <strong>Use only for exploratory, non-compliance-critical workflows.</strong></p>
+
+    <h4>Full Flow Diagram</h4>
+    <div class="arch-diagram">
+<span class="cm">── Traditional (sequential/tree): agents call each other ──────────────────────</span>
+  A ──▶ B ──▶ C  (predetermined path)
+
+<span class="cm">── Blackboard: agents publish/subscribe to shared store ───────────────────────</span>
+
+                    <span class="store">┌─────────────────────────────────┐</span>
+                    <span class="store">│       BLACKBOARD (event store)  │</span>
+                    <span class="store">│  events: [                      │</span>
+                    <span class="store">│    {type:"query_posted",   ...} │</span>
+                    <span class="store">│    {type:"evidence_added", ...} │</span>
+                    <span class="store">│    {type:"gap_found",      ...} │</span>
+                    <span class="store">│    {type:"draft_ready",    ...} │</span>
+                    <span class="store">│  ]                              │</span>
+                    <span class="store">└──────┬──────────────────────────┘</span>
+                           │ subscribe / publish
+              ┌────────────┼─────────────┬──────────────┐
+              │            │             │              │
+              ▼            ▼             ▼              ▼
+     <span class="node">[ PLANNER  ]</span>   <span class="node">[ RETRIEVER]</span>  <span class="node">[ CRITIC   ]</span>  <span class="node">[ WRITER   ]</span>
+     watches:       watches:       watches:       watches:
+     query_posted   task_assigned  evidence_added draft_requested
+     publishes:     publishes:     publishes:     publishes:
+     tasks[]        evidence[]     gap_found[]    draft_ready
+
+<span class="label">Each agent is autonomous: it wakes when its trigger condition is met, acts, and publishes results.
+Multiple agents can act simultaneously if their triggers fire at the same time.</span>
+<span class="cm">Risk: non-deterministic execution order. Never use for compliance, financial, or regulated outputs.
+Guard: max event count, TTL per run, mandatory HITL before any external action.</span>
+    </div>
+
+    <h4>Best Use Cases</h4>
+    <table>
+      <thead><tr><th>#</th><th>Use case</th><th>Why Blackboard fits</th><th>Avoid if…</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Open-ended market scanning</strong> — continuously monitors news, social, and filings for signals about a company or sector; agents self-trigger when relevant signals arrive</td>
+          <td>No predetermined sequence. Signal volume varies. Multiple agents (trend spotter, sentiment scorer, alert drafter) can react to the same event independently. Emergent alerting patterns are acceptable.</td>
+          <td>The output triggers financial trades or regulatory filings — use sequential + HITL instead</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Collaborative R&amp;D hypothesis generation</strong> — multiple specialist agents (biology, chemistry, clinical) post hypotheses to a shared board; others comment, extend, or contradict</td>
+          <td>Creative ideation benefits from non-linear interaction. A chemistry agent's finding might trigger a biology agent to re-examine its hypothesis. The goal is breadth of ideas, not a single deterministic output.</td>
+          <td>Results feed directly into patient treatment decisions — add deterministic gate layer</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Internal knowledge maintenance bot</strong> — monitors document update events, triggers the relevant specialist agent to refresh related KB entries when source docs change</td>
+          <td>Event-driven: a new policy document triggers Legal agent; a new product spec triggers Technical Writer agent. Agents are independent and can run concurrently without knowing about each other.</td>
+          <td>Edits go directly to production-facing docs — add approval gate before publish</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>LangGraph — Shared State as Blackboard</h4>
+    <pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+<span class="kw">from</span> typing <span class="kw">import</span> Annotated
+<span class="kw">import</span> operator
+
+<span class="kw">class</span> <span class="tp">BlackboardState</span>(TypedDict):
+    events:     Annotated[<span class="tp">list</span>, operator.add]   <span class="cm"># append-only event log</span>
+    tasks:      Annotated[<span class="tp">list</span>, operator.add]
+    evidence:   Annotated[<span class="tp">list</span>, operator.add]
+    gaps:       Annotated[<span class="tp">list</span>, operator.add]
+    drafts:     Annotated[<span class="tp">list</span>, operator.add]
+    iteration:  <span class="tp">int</span>
+    status:     <span class="tp">str</span>
+
+<span class="kw">def</span> <span class="fn">route_blackboard</span>(state: <span class="tp">BlackboardState</span>) -> <span class="tp">str</span>:
+    <span class="cm"># Router inspects latest event to decide next active agent</span>
+    last_event = state[<span class="st">"events"</span>][-1][<span class="st">"type"</span>] <span class="kw">if</span> state[<span class="st">"events"</span>] <span class="kw">else</span> <span class="st">"start"</span>
+    <span class="kw">if</span> state[<span class="st">"iteration"</span>] > 20: <span class="kw">return</span> <span class="st">"escalate"</span>   <span class="cm"># hard event count guard</span>
+    <span class="kw">if</span> last_event == <span class="st">"query_posted"</span>:    <span class="kw">return</span> <span class="st">"planner"</span>
+    <span class="kw">if</span> last_event == <span class="st">"tasks_published"</span>: <span class="kw">return</span> <span class="st">"retriever"</span>
+    <span class="kw">if</span> last_event == <span class="st">"evidence_added"</span>:  <span class="kw">return</span> <span class="st">"critic"</span>
+    <span class="kw">if</span> last_event == <span class="st">"gap_found"</span>:       <span class="kw">return</span> <span class="st">"retriever"</span>
+    <span class="kw">if</span> last_event == <span class="st">"no_gaps"</span>:         <span class="kw">return</span> <span class="st">"hitl"</span>
+    <span class="kw">return</span> <span class="st">"escalate"</span>
+
+g = StateGraph(<span class="tp">BlackboardState</span>)
+g.<span class="fn">add_node</span>(<span class="st">"planner"</span>,    planner_node)
+g.<span class="fn">add_node</span>(<span class="st">"retriever"</span>,  retriever_node)
+g.<span class="fn">add_node</span>(<span class="st">"critic"</span>,     critic_node)
+g.<span class="fn">add_node</span>(<span class="st">"hitl"</span>,       hitl_node)
+g.<span class="fn">add_node</span>(<span class="st">"escalate"</span>,   escalation_node)
+
+g.<span class="fn">set_entry_point</span>(<span class="st">"planner"</span>)
+<span class="cm"># All nodes return to the router — router decides who acts next</span>
+<span class="kw">for</span> node <span class="kw">in</span> [<span class="st">"planner"</span>, <span class="st">"retriever"</span>, <span class="st">"critic"</span>]:
+    g.<span class="fn">add_conditional_edges</span>(node, route_blackboard,
+        {<span class="st">"planner"</span>:<span class="st">"planner"</span>, <span class="st">"retriever"</span>:<span class="st">"retriever"</span>, <span class="st">"critic"</span>:<span class="st">"critic"</span>,
+         <span class="st">"hitl"</span>:<span class="st">"hitl"</span>, <span class="st">"escalate"</span>:<span class="st">"escalate"</span>})</pre>
+
+    <div class="callout callout-warn">
+      <strong>Blackboard in production: mandatory guards.</strong> (1) Hard event-count ceiling — abort at N=20 events regardless of state. (2) TTL per run — expire after 30 minutes max. (3) HITL gate is non-negotiable before any write action. (4) LangSmith tracing must be enabled — without it, debugging emergent behaviour is impossible. Use the blackboard pattern <em>only</em> in internal-facing exploratory systems, never on externally-published outputs.
+    </div>
+
+    <h4>n8n — Event-Driven Mesh via Webhook Triggers</h4>
+    <pre><span class="cm">// n8n: each agent is a separate workflow triggered by webhooks</span>
+<span class="cm">// They communicate via a shared n8n variable store or Postgres</span>
+
+<span class="cm">// Planner workflow — triggered by new user query webhook</span>
+{ <span class="st">"trigger"</span>: { <span class="st">"type"</span>: <span class="st">"webhook"</span>, <span class="st">"path"</span>: <span class="st">"query_posted"</span> },
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Planner Agent"</span>, ... },
+    { <span class="st">"name"</span>: <span class="st">"Publish Tasks"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.httpRequest"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"url"</span>: <span class="st">"http://n8n/webhook/tasks_published"</span>,
+                        <span class="st">"method"</span>: <span class="st">"POST"</span>, <span class="st">"body"</span>: <span class="st">"={{ $json.tasks }}"</span> } }
+  ]
+}
+
+<span class="cm">// Retriever workflow — triggered by tasks_published webhook</span>
+{ <span class="st">"trigger"</span>: { <span class="st">"type"</span>: <span class="st">"webhook"</span>, <span class="st">"path"</span>: <span class="st">"tasks_published"</span> },
+  <span class="st">"nodes"</span>: [
+    { <span class="st">"name"</span>: <span class="st">"Retriever Agent"</span>, ... },
+    { <span class="st">"name"</span>: <span class="st">"Publish Evidence"</span>, <span class="st">"type"</span>: <span class="st">"n8n-nodes-base.httpRequest"</span>,
+      <span class="st">"parameters"</span>: { <span class="st">"url"</span>: <span class="st">"http://n8n/webhook/evidence_added"</span> } }
+  ]
+}
+
+<span class="cm">// Each agent workflow follows the same pub/sub pattern.
+// n8n's execution log becomes the de-facto blackboard audit trail.</span></pre>
+
   </section>
 
   <!-- ===== CHAPTER 4 ===== -->
@@ -1124,24 +1855,24 @@ bedrock_runtime = boto3.<span class="fn">client</span>(<span class="st">"bedrock
         </tr>
         <tr>
           <td>Orchestrator-Worker</td>
-          <td>Central monitoring; cross-cutting tasks; support triage</td>
-          <td>Supervisor becomes bottleneck; context window exhausted</td>
-          <td>LangGraph with supervisor node; AutoGen GroupChat</td>
-          <td>Supervisor stateless about worker internals; workers replaceable</td>
+          <td>Dynamic task routing; support triage; queries that reveal sub-tasks mid-run</td>
+          <td>Predetermined path known in advance; context window cost matters</td>
+          <td>LangGraph create_react_agent; n8n AI Agent with sub-workflow tools</td>
+          <td>Max tool-call ceiling (10); Orchestrator must not hold full evidence in context</td>
         </tr>
         <tr>
           <td>Hierarchical Tree</td>
-          <td>50+ agent tasks; multi-domain enterprise reviews</td>
-          <td>Simple tasks; adds unnecessary latency/cost</td>
+          <td>50+ agent tasks; multi-domain enterprise reviews; multi-jurisdiction analysis</td>
+          <td>Simple tasks; adds unnecessary latency/cost; single domain</td>
           <td>Step Functions nested state machines; LangGraph sub-graphs</td>
-          <td>Pass citation IDs upward (not full text); shared evidence store</td>
+          <td>Pass citation IDs upward (not full text); shared evidence store per run</td>
         </tr>
         <tr>
           <td>Blackboard / Mesh</td>
-          <td>Exploratory research; emergent coordination</td>
-          <td>Compliance-heavy; determinism required</td>
-          <td>LangGraph with shared state store; custom event bus</td>
-          <td>Strong tracing; structured update schema; emergent behaviour caps</td>
+          <td>Exploratory research; market scanning; emergent coordination; R&amp;D ideation</td>
+          <td>Compliance-heavy; determinism required; regulated outputs</td>
+          <td>LangGraph shared state + event router; n8n webhook pub/sub</td>
+          <td>Hard event-count ceiling (20); TTL per run (30 min); mandatory HITL before writes; LangSmith tracing required</td>
         </tr>
       </tbody>
     </table>
